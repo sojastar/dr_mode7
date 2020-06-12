@@ -1,14 +1,15 @@
 #require 'lib/mode7.rb'
 
 
+# ---=== SETUP : ===---
 def setup(args)
   args.state.player.x         = 480 - 72 
   args.state.player.y         = 128
   args.state.player.direction = 0.0
-  args.state.player.dx        = 5 * Math::cos( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
-  args.state.player.dy        = 5 * Math::sin( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
-  #args.state.player.dx        = 5 * Math::cos( deg_to_rad(args.state.player.direction) )
-  #args.state.player.dy        = 5 * Math::sin( deg_to_rad(args.state.player.direction) )
+  #args.state.player.dx        = 5 * Math::cos( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
+  #args.state.player.dy        = 5 * Math::sin( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
+  args.state.player.dx        = 5 * Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
+  args.state.player.dy        = 5 * Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
 
   args.state.setup_done = true
 
@@ -16,26 +17,23 @@ def setup(args)
 end
 
 
+# ---=== MAIN LOOP : ===---
 def tick(args)
   setup(args) unless args.state.setup_done
 
 
   if    args.inputs.keyboard.key_held.left then
     args.state.player.direction  -= 0.5
-    args.state.player.dx          = 5 * Math::cos( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
-    args.state.player.dy          = 5 * Math::sin( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
-    #args.state.player.dx          = 5 * Math::cos( deg_to_rad(args.state.player.direction) )
-    #args.state.player.dy          = 5 * Math::sin( deg_to_rad(args.state.player.direction) )
+    args.state.player.dx          = 5 * Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
+    args.state.player.dy          = 5 * Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
   elsif args.inputs.keyboard.key_held.right then
     args.state.player.direction  += 0.5
-    args.state.player.dx          = 5 * Math::cos( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
-    args.state.player.dy          = 5 * Math::sin( deg_to_rad(args.state.player.direction) + Math::PI/2.0 )
-    #args.state.player.dx          = 5 * Math::cos( deg_to_rad(args.state.player.direction) )
-    #args.state.player.dy          = 5 * Math::sin( deg_to_rad(args.state.player.direction) )
+    args.state.player.dx          = 5 * Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
+    args.state.player.dy          = 5 * Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
   end
 
   if args.inputs.keyboard.key_held.up then
-    args.state.player.x          += args.state.player.dx
+    args.state.player.x          -= args.state.player.dx
     args.state.player.y          += args.state.player.dy
   end
 
@@ -49,29 +47,30 @@ def tick(args)
                                           angle_anchor_x: args.state.player.x / 480.0,
                                           angle_anchor_y: args.state.player.y / 480.0 }
 
-  450.times do |y|
-    args.outputs.sprites << { x:      0,
-                              y:      y,
-                              w:      680,
-                              h:      1,
-                              path:   :road,
-                              tile_x: 0,
-                              tile_y: 720 - y,
-                              tile_w: 680,
-                              tile_h: 1 }
-  end
+  args.outputs.sprites << { x:      0,
+                            y:      0,
+                            w:      1280,
+                            h:      720,
+                            path:   :road }
+
+  #450.times do |y|
+  #  args.outputs.sprites << { x:      0,
+  #                            y:      y,
+  #                            w:      680,
+  #                            h:      1,
+  #                            path:   :road,
+  #                            tile_x: 0,
+  #                            tile_y: 720 - y,
+  #                            tile_w: 680,
+  #                            tile_h: 1 }
+  #end
   
   args.outputs.lines << [ 320, 320, 360, 360, 0, 0, 0, 255 ]
   args.outputs.lines << [ 320, 360, 360, 320, 0, 0, 0, 255 ]
-  #args.outputs.lines << [ 340,
-  #                        340,
-  #                        340 + 10 * args.state.player.dx,
-  #                        340 + 10 * args.state.player.dy,
-  #                        255, 0, 0, 255 ]
-
 end
 
 
+# ---=== TOOLS : ===---
 def deg_to_rad(angle)
   angle * Math::PI / 180.0
 end
