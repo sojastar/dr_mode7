@@ -12,8 +12,6 @@ SCREEN_HALF_HEIGHT    = 360
 
 PIXEL_SCALE           = 8
 RASTER_HEIGHT         = 80
-#RASTER_SCAN_MAX       = 24 
-#RASTER_SCAN_MIN       = 1
 RASTER_SCAN_MAX       = 1
 RASTER_SCAN_MIN       = 1.0/24.0
 
@@ -23,7 +21,7 @@ ROTATED_ROAD_MAX_SIZE = 900
 CAMERA_OFFSET         = 48
 FOCAL                 = 80
 
-TRANSLATION_SPEED     = 3
+TRANSLATION_SPEED     = 2.5
 ROTATION_SPEED        = 2.0
 
 
@@ -80,29 +78,29 @@ def tick(args)
 
   # -2.2 Geometry control :
   if args.inputs.keyboard.key_down.one then
-    args.state.raster_scan_min -= 2 
+    args.state.raster_scan_min  = dec(args.state.raster_scan_min) 
     args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
 
   elsif args.inputs.keyboard.key_down.two then
-    args.state.raster_scan_min += 2 
+    args.state.raster_scan_min  = inc(args.state.raster_scan_min) 
     args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
 
   elsif args.inputs.keyboard.key_down.three then
-    args.state.raster_scan_max -= 2 
+    args.state.raster_scan_max  = dec(args.state.raster_scan_max) 
     args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
     args.state.intercept        = args.state.raster_scan_max
 
   elsif args.inputs.keyboard.key_down.four then
-    args.state.raster_scan_max += 2 
+    args.state.raster_scan_max  = inc(args.state.raster_scan_max) 
     args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
     args.state.intercept        = args.state.raster_scan_max
 
   elsif args.inputs.keyboard.key_down.five then
-    args.state.raster_height   -= 2 
+    args.state.raster_height   -= 1 
     args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
 
   elsif args.inputs.keyboard.key_down.six then
-    args.state.raster_height   += 2 
+    args.state.raster_height   += 1 
     args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
 
   end
@@ -129,23 +127,22 @@ def tick(args)
   #                          w: 1280,
   #                          h: 720,
   #                          path: :road }
+  #args.outputs.labels << [ 20, 700, "raster height: #{args.state.raster_height} - scan min: #{args.state.raster_scan_min} - scan max: #{args.state.raster_scan_max}" ]
 
 
   # - 3.2 Rasterizing :
-  #0.upto(args.state.raster_height) do |y|
   args.state.raster_height.times do |y|
-    distance    = args.state.focal * args.state.raster_height / ( args.state.raster_height + 1 - y )
+    distance    = args.state.focal * args.state.raster_height / ( args.state.raster_height + 1 - y ).to_f
     scale       = args.state.slope * y + args.state.intercept
-    #args.outputs.sprites << { x:      80 - scale * ( ROTATED_ROAD_MAX_SIZE >> 1 ),
-    args.render_target(:scanned_road).sprites << { x:      80 - scale * ( ROTATED_ROAD_MAX_SIZE >> 1 ),
-                              y:      y,#PIXEL_SCALE * y,
-                              w:      scale * ROTATED_ROAD_MAX_SIZE,
-                              h:      1,#PIXEL_SCALE,
-                              path:   :road,
-                              tile_x: 0,
-                              tile_y: 720 - ( ROTATED_ROAD_MAX_SIZE >> 1 ) - distance,
-                              tile_w: ROTATED_ROAD_MAX_SIZE,
-                              tile_h: 1 }
+    args.render_target(:scanned_road).sprites << {  x:      80 - scale * ( ROTATED_ROAD_MAX_SIZE >> 1 ),
+                                                    y:      y,
+                                                    w:      scale * ROTATED_ROAD_MAX_SIZE,
+                                                    h:      1,
+                                                    path:   :road,
+                                                    tile_x: 0,
+                                                    tile_y: 720 - ( ROTATED_ROAD_MAX_SIZE >> 1 ) - distance,
+                                                    tile_w: ROTATED_ROAD_MAX_SIZE,
+                                                    tile_h: 1 }
   end
 
   args.outputs.sprites << { x:      0,
@@ -166,4 +163,16 @@ end
 def draw_cross(dest,x,y,color)
   dest << [x-5, y-5, x+5, y+5]+color
   dest << [x-5, y+5, x+5, y-5]+color
+end
+
+def inc(v)
+  if v >= 2.0 then  v + 1.0
+  else              v * 2.0
+  end
+end
+
+def dec(v)
+  if v <= 2.0 then  v / 2.0
+  else              v - 1.0
+  end
 end
