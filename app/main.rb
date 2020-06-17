@@ -12,8 +12,10 @@ SCREEN_HALF_HEIGHT    = 360
 
 PIXEL_SCALE           = 8
 RASTER_HEIGHT         = 80
-RASTER_SCAN_MAX       = 24 
-RASTER_SCAN_MIN       = 1
+#RASTER_SCAN_MAX       = 24 
+#RASTER_SCAN_MIN       = 1
+RASTER_SCAN_MAX       = 1
+RASTER_SCAN_MIN       = 1.0/24.0
 
 ROAD_SIZE             = 636
 ROTATED_ROAD_MAX_SIZE = 900
@@ -106,6 +108,8 @@ def tick(args)
   end
 
   # --- 3. Rasterizing :
+  
+  # - 3.1 Rotating :
   args.render_target(:road).sprites << {  x:              ( ROTATED_ROAD_MAX_SIZE >> 1 ) - args.state.player.x,
                                           y:              ( ROTATED_ROAD_MAX_SIZE >> 1 ) - args.state.player.y,
                                           w:              ROAD_SIZE,
@@ -127,20 +131,33 @@ def tick(args)
   #                          path: :road }
 
 
-  0.upto(args.state.raster_height) do |y|
+  # - 3.2 Rasterizing :
+  #0.upto(args.state.raster_height) do |y|
+  args.state.raster_height.times do |y|
     distance    = args.state.focal * args.state.raster_height / ( args.state.raster_height + 1 - y )
     scale       = args.state.slope * y + args.state.intercept
-    args.outputs.sprites << { x:      SCREEN_HALF_WIDTH - scale * ( ROTATED_ROAD_MAX_SIZE >> 1 ),
-                              y:      PIXEL_SCALE * y,
+    #args.outputs.sprites << { x:      80 - scale * ( ROTATED_ROAD_MAX_SIZE >> 1 ),
+    args.render_target(:scanned_road).sprites << { x:      80 - scale * ( ROTATED_ROAD_MAX_SIZE >> 1 ),
+                              y:      y,#PIXEL_SCALE * y,
                               w:      scale * ROTATED_ROAD_MAX_SIZE,
-                              h:      PIXEL_SCALE,
+                              h:      1,#PIXEL_SCALE,
                               path:   :road,
                               tile_x: 0,
                               tile_y: 720 - ( ROTATED_ROAD_MAX_SIZE >> 1 ) - distance,
                               tile_w: ROTATED_ROAD_MAX_SIZE,
                               tile_h: 1 }
   end
- 
+
+  args.outputs.sprites << { x:      0,
+                            y:      0,
+                            w:      SCREEN_WIDTH,
+                            h:      SCREEN_HEIGHT,
+                            path:   :scanned_road,
+                            tile_x: 0,
+                            tile_y: 630,
+                            tile_w: 160,
+                            tile_h: 90 }
+
 
   # --- 4. Background :
   args.outputs.solids << [ 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 100, 150, 255, 255 ]
