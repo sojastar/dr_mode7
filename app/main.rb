@@ -102,7 +102,7 @@ def tick(args)
                                           y:              450 - args.state.player.y,
                                           w:              636,
                                           h:              636,
-                                          path:           'sprites/track_test_2.png',
+                                          path:           'sprites/track_test.png',
                                           angle:          args.state.player.direction,
                                           angle_anchor_x: args.state.player.x / 636.0,
                                           angle_anchor_y: ( args.state.player.y + 48 ) / 636.0 }
