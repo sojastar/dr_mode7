@@ -5,8 +5,8 @@
 
 
 # ---=== CONSTANTS : ===---
-PIXEL_SCALE         = 8
-SCREEN_HALF_WIDTH   = ( 1280 / PIXEL_SCALE ) / 2
+#PIXEL_SCALE         = 8
+#SCREEN_HALF_WIDTH   = ( 1280 / PIXEL_SCALE ) / 2
 RASTER_HEIGHT       = 80
 RASTER_SCAN_MAX     = 24 
 RASTER_SCAN_MIN     = 1 
@@ -122,7 +122,7 @@ def tick(args)
   0.upto(RASTER_HEIGHT) do |y|
     distance    = args.state.focal * args.state.raster_height / ( args.state.raster_height + 1 - y )
     scale       = args.state.slope * y + args.state.intercept
-    args.outputs.sprites << { x:      640 - scale * 450,
+    args.outputs.sprites << { x:      640 - scale * 450 - ( ( scale * 450 ) % 8 ),
                               y:      8 * y,
                               w:      scale * 900,
                               h:      8,
