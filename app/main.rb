@@ -1,4 +1,8 @@
 #require 'lib/mode7.rb'
+#require 'data/big_track_test.rb'
+#require 'data/test_array.rb'
+
+#puts @an_array
 
 
 
@@ -30,6 +34,14 @@ ROTATION_SPEED        = 2.0
 
 # ---=== SETUP : ===---
 def setup(args)
+  #track_file  = File.open('/data/big_track_test.rb', 'r')
+  #track_file  = File.open('/data/test_array.rb', 'r')
+  #track_data  = track_file.read
+  #track_file.close
+  #track_data  = args.gtk.read_file('/data/big_track_test.rb')
+  #
+  #instance_eval track_data
+
   args.state.player.x         = ROAD_SIZE - 176 
   args.state.player.y         = 192
   args.state.player.direction = 0.0
@@ -112,7 +124,7 @@ def tick(args)
                                           y:              ( ROTATED_ROAD_MAX_SIZE >> 1 ) - args.state.player.y,
                                           w:              ROAD_SIZE,
                                           h:              ROAD_SIZE,
-                                          path:           'sprites/track_test.png',
+                                          path:           'data/track_test.png',
                                           angle:          args.state.player.direction,
                                           angle_anchor_x: args.state.player.x / ROAD_SIZE,
                                           angle_anchor_y: ( args.state.player.y + CAMERA_OFFSET ) / ROAD_SIZE }
