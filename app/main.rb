@@ -181,8 +181,8 @@ def tick(args)
       tile_index    = args.state.track[tile_index_y][tile_index_x] 
       break if tile_index.nil?
 
-      tile_x        = TILE_SIZE * x# + ( args.state.player.x % 8 )
-      tile_y        = TILE_SIZE * y# + ( args.state.player.y % 8 )
+      tile_x        = TILE_SIZE * x - ( args.state.player.x % 8 )
+      tile_y        = TILE_SIZE * y - ( args.state.player.y % 8 )
       tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
       #tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
 
@@ -214,20 +214,21 @@ def tick(args)
 
   # - 3.2 Mode 7 rasterizing :
   distance  = 0
-  args.state.raster_height.times do |y|
+  args.render_target(:scanned_road).sprites << args.state.raster_height.times.map do |y|
     jump      = 10.0 * y / ( args.state.raster_height - 1 ) + 1
     distance += jump
     scale     =  1 - ( 0.9 / 80.0 ) * y
     #puts "scale: #{scale}"
-    args.render_target(:scanned_road).sprites << {  x: 80 - 640 * scale,
-                                                    y: y,
-                                                    w: 1280 * scale,
-                                                    h: 1,
-                                                    path: :rotated_road,
-                                                    source_x: 0,
-                                                    source_y: 368 + distance,
-                                                    source_w: 1280,
-                                                    source_h: 1 }
+    #args.render_target(:scanned_road).sprites << {  x: 80 - 640 * scale,
+    {  x:         80 - 640 * scale,
+       y:         y,
+       w:         1280 * scale,
+       h:         1,
+       path: :rotated_road,
+       source_x: 0,
+       source_y: 368 + distance,
+       source_w: 1280,
+       source_h: 1 }
   end
 
   args.outputs.sprites << { x:      0,
