@@ -1,8 +1,4 @@
 #require 'lib/mode7.rb'
-#require 'data/big_track_test.rb'
-#require 'data/test_array.rb'
-
-#puts @an_array
 
 
 
@@ -24,11 +20,14 @@ RASTER_HEIGHT         = 80
 RASTER_SCAN_MAX       = 1
 RASTER_SCAN_MIN       = 1.0/24.0
 
-ROAD_SIZE             = 636
-ROTATED_ROAD_MAX_SIZE = 900
+#ROAD_SIZE             = 636
+#ROTATED_ROAD_MAX_SIZE = 900
 
 CAMERA_OFFSET         = 48
 FOCAL                 = 80
+
+FIELD_DEPTH           = 200#120
+FIELD_WIDTH           = 100#60
 
 TRANSLATION_SPEED     = 2.5
 ROTATION_SPEED        = 2.0
@@ -41,20 +40,18 @@ ROTATION_SPEED        = 2.0
 def setup(args)
   args.state.track            = read_track_data
 
-  args.state.player.x         = 234 * TILE_SIZE#ROAD_SIZE - 176 
-  args.state.player.y         = 110 * TILE_SIZE#192
+  args.state.player.x         = 234 * TILE_SIZE 
+  args.state.player.y         = 110 * TILE_SIZE
   args.state.player.direction = 0.0
   args.state.player.ux        = Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
   args.state.player.uy        = Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
   args.state.player.vx        = -args.state.player.uy
   args.state.player.vy        =  args.state.player.ux
-  #args.state.player.dx        = 5 * Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
-  #args.state.player.dy        = 5 * Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
   args.state.player.dx        = TRANSLATION_SPEED * args.state.player.ux
   args.state.player.dy        = TRANSLATION_SPEED * args.state.player.uy
 
-  args.state.field_depth      = 120
-  args.state.field_width      = 60
+  args.state.field_depth      = FIELD_DEPTH
+  args.state.field_width      = FIELD_WIDTH
 
   args.state.raster_height    = RASTER_HEIGHT
   args.state.raster_scan_min  = RASTER_SCAN_MIN
@@ -65,12 +62,17 @@ def setup(args)
   args.state.focal            = FOCAL
   args.state.height           = RASTER_HEIGHT
 
+  #args.render_target(:road).width   = 720
+  #args.render_target(:road).height  = 720
+  #args.render_target(:rotated_road).width   = 720
+  #args.render_target(:rotated_road).height  = 720
+
   args.state.setup_done       = true
 end
 
 def read_track_data
   track_csv = $gtk.read_file('/data/big_track_test.rb')
-  track_csv.split("\n").map { |line| line.split(',').map { |v| v.to_i } }
+  track_csv.split("\n").reverse.map { |line| line.split(',').map { |v| v.to_i } }
 end
 
 
@@ -87,25 +89,25 @@ def tick(args)
  
   # - 2.1 Player control :
   if    args.inputs.keyboard.key_held.left then
-    args.state.player.direction  -= ROTATION_SPEED
-    args.state.player.ux          = Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
-    args.state.player.uy          = Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
-    args.state.player.vx          = -args.state.player.uy
-    args.state.player.vy          =  args.state.player.ux
-    args.state.player.dx          = TRANSLATION_SPEED * args.state.player.ux#Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
-    args.state.player.dy          = TRANSLATION_SPEED * args.state.player.uy#Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
-  elsif args.inputs.keyboard.key_held.right then
     args.state.player.direction  += ROTATION_SPEED
     args.state.player.ux          = Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
     args.state.player.uy          = Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
     args.state.player.vx          = -args.state.player.uy
     args.state.player.vy          =  args.state.player.ux
-    args.state.player.dx          = TRANSLATION_SPEED * args.state.player.ux#Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
-    args.state.player.dy          = TRANSLATION_SPEED * args.state.player.uy#Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
+    args.state.player.dx          = TRANSLATION_SPEED * args.state.player.ux
+    args.state.player.dy          = TRANSLATION_SPEED * args.state.player.uy
+  elsif args.inputs.keyboard.key_held.right then
+    args.state.player.direction  -= ROTATION_SPEED
+    args.state.player.ux          = Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
+    args.state.player.uy          = Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
+    args.state.player.vx          = -args.state.player.uy
+    args.state.player.vy          =  args.state.player.ux
+    args.state.player.dx          = TRANSLATION_SPEED * args.state.player.ux
+    args.state.player.dy          = TRANSLATION_SPEED * args.state.player.uy
   end
 
   if args.inputs.keyboard.key_held.up then
-    args.state.player.x          -= args.state.player.dx
+    args.state.player.x          += args.state.player.dx
     args.state.player.y          += args.state.player.dy
   end
 
@@ -161,17 +163,17 @@ def tick(args)
   args.outputs.labels << [ 20, 680, "player coords: #{( args.state.player.x / 8 ).floor};#{( args.state.player.y / 8 ).floor}" ]
 
   # u and v :
-  args.outputs.lines << [ 640, 360, 640 + 20 * args.state.player.ux, 360 + 20 * args.state.player.uy, 0, 255, 0, 255 ]
-  args.outputs.lines << [ 640, 360, 640 + 20 * args.state.player.vx, 360 + 20 * args.state.player.vy, 0, 0, 255, 255 ]
+  #args.outputs.lines << [ 640, 360, 640 + 20 * args.state.player.ux, 360 + 20 * args.state.player.uy, 0, 255, 0, 255 ]
+  #args.outputs.lines << [ 640, 360, 640 + 20 * args.state.player.vx, 360 + 20 * args.state.player.vy, 0, 0, 255, 255 ]
 
   # field of view bounds :
   left_bound_x  = args.state.player.ux * args.state.field_depth - args.state.player.vx * args.state.field_width
   left_bound_y  = args.state.player.uy * args.state.field_depth - args.state.player.vy * args.state.field_width
   right_bound_x = args.state.player.ux * args.state.field_depth + args.state.player.vx * args.state.field_width
   right_bound_y = args.state.player.uy * args.state.field_depth + args.state.player.vy * args.state.field_width
-  args.outputs.lines << [ 640, 360, 640 +  left_bound_x, 360 +  left_bound_y, 255, 0, 0, 255 ]
-  args.outputs.lines << [ 640, 360, 640 + right_bound_x, 360 + right_bound_y, 255, 0, 0, 255 ]
-  args.outputs.lines << [ 640 + left_bound_x, 360 + left_bound_y, 640 + right_bound_x, 360 + right_bound_y, 255, 0, 0, 255 ]
+  #args.outputs.lines << [ 640, 360, 640 +  left_bound_x, 360 +  left_bound_y, 255, 0, 0, 255 ]
+  #args.outputs.lines << [ 640, 360, 640 + right_bound_x, 360 + right_bound_y, 255, 0, 0, 255 ]
+  #args.outputs.lines << [ 640 + left_bound_x, 360 + left_bound_y, 640 + right_bound_x, 360 + right_bound_y, 255, 0, 0, 255 ]
 
   scan_bounds = rasterize_field_of_view [ 0.0, 0.0 ],
                                         [  left_bound_x,  left_bound_y ],
@@ -180,6 +182,7 @@ def tick(args)
   #count = 0
   base_x  = ( args.state.player.x / TILE_SIZE ).floor
   base_y  = ( args.state.player.y / TILE_SIZE ).floor
+  tiles   = []
   scan_bounds.each do |bounds|
     break if bounds[0].nil? || bounds[1].nil?
 
@@ -187,17 +190,44 @@ def tick(args)
     max_x = bounds[1][0]
     y     = bounds[0][1]
     until x >= max_x do
-      draw_cross args.outputs.lines, 640 + TILE_SIZE * x, 360 + TILE_SIZE * y, [ 255, 0, 255, 255 ]
+      #draw_cross args.outputs.lines, 640 + TILE_SIZE * x, 360 + TILE_SIZE * y, [ 255, 0, 255, 255 ]
 
       tile_index_x  = base_x + x 
       tile_index_y  = base_y + y 
-      tile_index    = args.state.track[tile_y][tile_x] 
+      tile_index    = args.state.track[tile_index_y][tile_index_x] 
+      break if tile_index.nil?
+
+      tile_x        = TILE_SIZE * x + ( args.state.player.x % 8 )
+      tile_y        = TILE_SIZE * y + ( args.state.player.y % 8 )
+      tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
+      #tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
 
       x += 1
       #count += 1
     end
   end
   #puts count
+
+  args.render_target(:road).sprites << tiles
+  
+  args.render_target(:rotated_road).sprites << {  x:              0,
+                                                  y:              0,
+                                                  w:              1280,
+                                                  h:              720,
+                                                  path:           :road,
+                                                  angle:          -args.state.player.direction,
+                                                  angle_anchor_x: 0.5,
+                                                  angle_anchor_y: 0.5 }
+
+  args.outputs.sprites << { x:        0,
+                            y:        0,
+                            w:        1280,
+                            h:        720,
+                            path:     :rotated_road }
+
+
+
+
   ##draw_cross( args.render_target(:road).lines,
   ##            450,
   ##            450,
