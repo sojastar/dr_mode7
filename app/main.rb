@@ -10,26 +10,29 @@ SCREEN_HALF_WIDTH     = 640
 SCREEN_HEIGHT         = 720
 SCREEN_HALF_HEIGHT    = 360
 
+DISPLAY_WIDTH         = 160
+DISPLAY_HEIGHT        = 90
+
 TILESHEET             = "/data/tiles.png"
 TILESHEET_WIDTH       = 16    # in tiles 
 TILESHEET_HEIGHT      = 16
 TILE_SIZE             = 8     # in pixels
 
 PIXEL_SCALE           = 8
-RASTER_HEIGHT         = 80
+RASTER_HEIGHT         = 70
 RASTER_SCAN_MAX       = 1
 RASTER_SCAN_MIN       = 1.0/24.0
 
 #ROAD_SIZE             = 636
 #ROTATED_ROAD_MAX_SIZE = 900
 
-CAMERA_OFFSET         = 48
-FOCAL                 = 80
+#CAMERA_OFFSET         = 48
+#FOCAL                 = 80
 
-FIELD_DEPTH           = 200#120
+FIELD_DEPTH           = 400#120
 FIELD_WIDTH           = 100#60
 
-TRANSLATION_SPEED     = 2.5
+TRANSLATION_SPEED     = 5#2.5
 ROTATION_SPEED        = 2.0
 
 
@@ -41,7 +44,7 @@ def setup(args)
   args.state.track            = read_track_data
 
   args.state.player.x         = 234 * TILE_SIZE 
-  args.state.player.y         = 110 * TILE_SIZE
+  args.state.player.y         = 40 * TILE_SIZE
   args.state.player.direction = 0.0
   args.state.player.ux        = Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
   args.state.player.uy        = Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
@@ -54,13 +57,13 @@ def setup(args)
   args.state.field_width      = FIELD_WIDTH
 
   args.state.raster_height    = RASTER_HEIGHT
-  args.state.raster_scan_min  = RASTER_SCAN_MIN
-  args.state.raster_scan_max  = RASTER_SCAN_MAX
-  args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
-  args.state.intercept        = RASTER_SCAN_MAX
+  #args.state.raster_scan_min  = RASTER_SCAN_MIN
+  #args.state.raster_scan_max  = RASTER_SCAN_MAX
+  #args.state.slope            = ( args.state.raster_scan_min - args.state.raster_scan_max ) / args.state.raster_height
+  #args.state.intercept        = RASTER_SCAN_MAX
 
-  args.state.focal            = FOCAL
-  args.state.height           = RASTER_HEIGHT
+  #args.state.focal            = FOCAL
+  #args.state.height           = RASTER_HEIGHT
 
   #args.render_target(:road).width   = 720
   #args.render_target(:road).height  = 720
@@ -141,64 +144,45 @@ def tick(args)
   #end
 
   # --- 3. Rasterizing :
-  
-  # - 3.1 Blitting tile map :
-
-
-  
-  # - 3.1 Rotating :
-  #args.render_target(:road).sprites << {  x:              ( ROTATED_ROAD_MAX_SIZE >> 1 ) - args.state.player.x,
-  #                                        y:              ( ROTATED_ROAD_MAX_SIZE >> 1 ) - args.state.player.y,
-  #                                        w:              ROAD_SIZE,
-  #                                        h:              ROAD_SIZE,
-  #                                        path:           'data/track_test.png',
-  #                                        angle:          args.state.player.direction,
-  #                                        angle_anchor_x: args.state.player.x / ROAD_SIZE,
-  #                                        angle_anchor_y: ( args.state.player.y + CAMERA_OFFSET ) / ROAD_SIZE }
 
   # DEBUG DEBUG DEBUG !!!
 
   # Coordinates :
   args.outputs.labels << [ 20, 700, "map width: #{args.state.track[0].length} - height: #{args.state.track.length}" ]
   args.outputs.labels << [ 20, 680, "player coords: #{( args.state.player.x / 8 ).floor};#{( args.state.player.y / 8 ).floor}" ]
+  
 
-  # u and v :
-  #args.outputs.lines << [ 640, 360, 640 + 20 * args.state.player.ux, 360 + 20 * args.state.player.uy, 0, 255, 0, 255 ]
-  #args.outputs.lines << [ 640, 360, 640 + 20 * args.state.player.vx, 360 + 20 * args.state.player.vy, 0, 0, 255, 255 ]
+  # - 3.1 Blitting tile map :
 
-  # field of view bounds :
+  # - Field of view bounds :
   left_bound_x  = args.state.player.ux * args.state.field_depth - args.state.player.vx * args.state.field_width
   left_bound_y  = args.state.player.uy * args.state.field_depth - args.state.player.vy * args.state.field_width
   right_bound_x = args.state.player.ux * args.state.field_depth + args.state.player.vx * args.state.field_width
   right_bound_y = args.state.player.uy * args.state.field_depth + args.state.player.vy * args.state.field_width
-  #args.outputs.lines << [ 640, 360, 640 +  left_bound_x, 360 +  left_bound_y, 255, 0, 0, 255 ]
-  #args.outputs.lines << [ 640, 360, 640 + right_bound_x, 360 + right_bound_y, 255, 0, 0, 255 ]
-  #args.outputs.lines << [ 640 + left_bound_x, 360 + left_bound_y, 640 + right_bound_x, 360 + right_bound_y, 255, 0, 0, 255 ]
 
+  # - Field of view content :
   scan_bounds = rasterize_field_of_view [ 0.0, 0.0 ],
                                         [  left_bound_x,  left_bound_y ],
                                         [ right_bound_x, right_bound_y ]
-  # field of view content :
-  #count = 0
+
   base_x  = ( args.state.player.x / TILE_SIZE ).floor
   base_y  = ( args.state.player.y / TILE_SIZE ).floor
   tiles   = []
+  #count   = 0
   scan_bounds.each do |bounds|
     break if bounds[0].nil? || bounds[1].nil?
 
-    x     = bounds[0][0]
-    max_x = bounds[1][0]
+    x     = bounds[0][0] - 5
+    max_x = bounds[1][0] + 5
     y     = bounds[0][1]
     until x >= max_x do
-      #draw_cross args.outputs.lines, 640 + TILE_SIZE * x, 360 + TILE_SIZE * y, [ 255, 0, 255, 255 ]
-
       tile_index_x  = base_x + x 
       tile_index_y  = base_y + y 
       tile_index    = args.state.track[tile_index_y][tile_index_x] 
       break if tile_index.nil?
 
-      tile_x        = TILE_SIZE * x + ( args.state.player.x % 8 )
-      tile_y        = TILE_SIZE * y + ( args.state.player.y % 8 )
+      tile_x        = TILE_SIZE * x# + ( args.state.player.x % 8 )
+      tile_y        = TILE_SIZE * y# + ( args.state.player.y % 8 )
       tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
       #tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
 
@@ -209,7 +193,9 @@ def tick(args)
   #puts count
 
   args.render_target(:road).sprites << tiles
-  
+
+
+  # - 3.2 Rotating :
   args.render_target(:rotated_road).sprites << {  x:              0,
                                                   y:              0,
                                                   w:              1280,
@@ -219,51 +205,40 @@ def tick(args)
                                                   angle_anchor_x: 0.5,
                                                   angle_anchor_y: 0.5 }
 
-  args.outputs.sprites << { x:        0,
-                            y:        0,
-                            w:        1280,
-                            h:        720,
-                            path:     :rotated_road }
+  #args.outputs.sprites << { x:        0,
+  #                          y:        0,
+  #                          w:        1280,
+  #                          h:        720,
+  #                          path:     :rotated_road }
 
 
+  # - 3.2 Mode 7 rasterizing :
+  distance  = 0
+  args.state.raster_height.times do |y|
+    jump      = 10.0 * y / ( args.state.raster_height - 1 ) + 1
+    distance += jump
+    scale     =  1 - ( 0.9 / 80.0 ) * y
+    #puts "scale: #{scale}"
+    args.render_target(:scanned_road).sprites << {  x: 80 - 640 * scale,
+                                                    y: y,
+                                                    w: 1280 * scale,
+                                                    h: 1,
+                                                    path: :rotated_road,
+                                                    source_x: 0,
+                                                    source_y: 368 + distance,
+                                                    source_w: 1280,
+                                                    source_h: 1 }
+  end
 
-
-  ##draw_cross( args.render_target(:road).lines,
-  ##            450,
-  ##            450,
-  ##            [ 255, 0, 0, 255 ] )
-  ##args.outputs.sprites << { x: 0,
-  ##                          y: 0,
-  ##                          w: 1280,
-  ##                          h: 720,
-  ##                          path: :road }
-  ##args.outputs.labels << [ 20, 700, "raster height: #{args.state.raster_height} - scan min: #{args.state.raster_scan_min} - scan max: #{args.state.raster_scan_max}" ]
-
-
-  ## - 3.2 Rasterizing :
-  #args.state.raster_height.times do |y|
-  #  distance    = args.state.focal * args.state.raster_height / ( args.state.raster_height + 1 - y ).to_f
-  #  scale       = args.state.slope * y + args.state.intercept
-  #  args.render_target(:scanned_road).sprites << {  x:      80 - scale * ( ROTATED_ROAD_MAX_SIZE >> 1 ),
-  #                                                  y:      y,
-  #                                                  w:      scale * ROTATED_ROAD_MAX_SIZE,
-  #                                                  h:      1,
-  #                                                  path:   :road,
-  #                                                  tile_x: 0,
-  #                                                  tile_y: 720 - ( ROTATED_ROAD_MAX_SIZE >> 1 ) - distance,
-  #                                                  tile_w: ROTATED_ROAD_MAX_SIZE,
-  #                                                  tile_h: 1 }
-  #end
-
-  #args.outputs.sprites << { x:      0,
-  #                          y:      0,
-  #                          w:      SCREEN_WIDTH,
-  #                          h:      SCREEN_HEIGHT,
-  #                          path:   :scanned_road,
-  #                          tile_x: 0,
-  #                          tile_y: 630,
-  #                          tile_w: 160,
-  #                          tile_h: 90 }
+  args.outputs.sprites << { x:      0,
+                            y:      0,
+                            w:      SCREEN_WIDTH,
+                            h:      SCREEN_HEIGHT,
+                            path:   :scanned_road,
+                            source_x: 0,
+                            source_y: 0,
+                            source_w: 160,
+                            source_h: 90 }
 
 
   # --- 4. Background :
