@@ -181,8 +181,8 @@ def tick(args)
       tile_index    = args.state.track[tile_index_y][tile_index_x] 
       break if tile_index.nil?
 
-      tile_x        = TILE_SIZE * x# + ( args.state.player.x % 8 )
-      tile_y        = TILE_SIZE * y# + ( args.state.player.y % 8 )
+      tile_x        = TILE_SIZE * x - ( args.state.player.x % 8 )
+      tile_y        = TILE_SIZE * y - ( args.state.player.y % 8 )
       tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
       #tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
 
