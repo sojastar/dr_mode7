@@ -331,13 +331,15 @@ def scan_convert(vertices)
     # Left scan :
     if left_dy > 0.0 then
       left_dx = ( vertices[next_left_index][0] - vertices[left_index][0] ) / left_dy
-      left_scan << snap( [ vertices[left_index][0] + TILE_SIZE * y * left_dx, bottom[1] + TILE_SIZE * y ] )
+      #left_scan << snap( [ vertices[left_index][0] + ( TILE_SIZE * y + bottom[1] ) * left_dx, bottom[1] + TILE_SIZE * y ] )
+      left_scan << [ vertices[left_index][0] + ( TILE_SIZE * y + bottom[1] ) * left_dx, bottom[1] + TILE_SIZE * y ]
     end
 
     # Right scan :
     if right_dy > 0.0 then
       right_dx = ( vertices[next_right_index][0] - vertices[right_index][0] ) / right_dy
-      right_scan << snap( [ vertices[right_index][0] + TILE_SIZE * y * right_dx, bottom[1] + TILE_SIZE * y ] )
+      #right_scan << snap( [ vertices[right_index][0] + ( TILE_SIZE * y + bottom[1] ) * right_dx, bottom[1] + TILE_SIZE * y ] )
+      right_scan << [ vertices[right_index][0] + ( TILE_SIZE * y + bottom[1] ) * right_dx, bottom[1] + TILE_SIZE * y ]
     end
 
     y += 1
