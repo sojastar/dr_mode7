@@ -13,10 +13,10 @@ SCREEN_HALF_HEIGHT    = 360
 DISPLAY_WIDTH         = 160
 DISPLAY_HEIGHT        = 90
 
-TILESHEET             = "/data/tiles.png"
-TILESHEET_WIDTH       = 16    # in tiles 
-TILESHEET_HEIGHT      = 16
-TILE_SIZE             = 8     # in pixels
+TILESHEET             = "/data/big_tiles.png"
+TILESHEET_WIDTH       = 32    # in tiles 
+TILESHEET_HEIGHT      = 32
+TILE_SIZE             = 64    # in pixels
 
 PIXEL_SCALE           = 8
 RASTER_HEIGHT         = 70
@@ -27,10 +27,13 @@ RASTER_SCAN_MIN       = 1.0/24.0
 #ROTATED_ROAD_MAX_SIZE = 900
 
 #CAMERA_OFFSET         = 48
-#FOCAL                 = 80
+NEAR                  = 32
+NEAR_FOCAL            = 80
+FAR                   = 512 
+FAR_FOCAL             = 400
 
-FIELD_DEPTH           = 400#120
-FIELD_WIDTH           = 100#60
+#FIELD_DEPTH           = 400#120
+#FIELD_WIDTH           = 200#60
 
 TRANSLATION_SPEED     = 5#2.5
 ROTATION_SPEED        = 2.0
@@ -43,8 +46,8 @@ ROTATION_SPEED        = 2.0
 def setup(args)
   args.state.track            = read_track_data
 
-  args.state.player.x         = 234 * TILE_SIZE 
-  args.state.player.y         = 40 * TILE_SIZE
+  args.state.player.x         = 26 * TILE_SIZE 
+  args.state.player.y         = 23 * TILE_SIZE
   args.state.player.direction = 0.0
   args.state.player.ux        = Math::cos( args.state.player.direction.to_radians + Math::PI/2.0 )
   args.state.player.uy        = Math::sin( args.state.player.direction.to_radians + Math::PI/2.0 )
@@ -53,8 +56,13 @@ def setup(args)
   args.state.player.dx        = TRANSLATION_SPEED * args.state.player.ux
   args.state.player.dy        = TRANSLATION_SPEED * args.state.player.uy
 
-  args.state.field_depth      = FIELD_DEPTH
-  args.state.field_width      = FIELD_WIDTH
+  #args.state.field_depth      = FIELD_DEPTH
+  #args.state.field_width      = FIELD_WIDTH
+  
+  args.state.near             = NEAR
+  args.state.near_focal       = NEAR_FOCAL
+  args.state.far              = FAR
+  args.state.far_focal        = FAR_FOCAL
 
   args.state.raster_height    = RASTER_HEIGHT
   #args.state.raster_scan_min  = RASTER_SCAN_MIN
@@ -74,7 +82,7 @@ def setup(args)
 end
 
 def read_track_data
-  track_csv = $gtk.read_file('/data/big_track_test.rb')
+  track_csv = $gtk.read_file('/data/track.csv')
   track_csv.split("\n").reverse.map { |line| line.split(',').map { |v| v.to_i } }
 end
 
@@ -155,15 +163,35 @@ def tick(args)
   # - 3.1 Blitting tile map :
 
   # - Field of view bounds :
-  left_bound_x  = args.state.player.ux * args.state.field_depth - args.state.player.vx * args.state.field_width
-  left_bound_y  = args.state.player.uy * args.state.field_depth - args.state.player.vy * args.state.field_width
-  right_bound_x = args.state.player.ux * args.state.field_depth + args.state.player.vx * args.state.field_width
-  right_bound_y = args.state.player.uy * args.state.field_depth + args.state.player.vy * args.state.field_width
+  #left_bound_x  = args.state.player.ux * args.state.field_depth - args.state.player.vx * args.state.field_width
+  #left_bound_y  = args.state.player.uy * args.state.field_depth - args.state.player.vy * args.state.field_width
+  #right_bound_x = args.state.player.ux * args.state.field_depth + args.state.player.vx * args.state.field_width
+  #right_bound_y = args.state.player.uy * args.state.field_depth + args.state.player.vy * args.state.field_width
+  near_left_x   = args.state.player.ux * args.state.near - args.state.player.vx * args.state.near_focal
+  near_left_y   = args.state.player.uy * args.state.near - args.state.player.vy * args.state.near_focal
+  near_right_x  = args.state.player.ux * args.state.near + args.state.player.vx * args.state.near_focal
+  near_right_y  = args.state.player.uy * args.state.near + args.state.player.vy * args.state.near_focal
+  far_left_x    = args.state.player.ux * args.state.far  - args.state.player.vx * args.state.far_focal
+  far_left_y    = args.state.player.uy * args.state.far  - args.state.player.vy * args.state.far_focal
+  far_right_x   = args.state.player.ux * args.state.far  + args.state.player.vx * args.state.far_focal
+  far_right_y   = args.state.player.uy * args.state.far  + args.state.player.vy * args.state.far_focal
 
   # - Field of view content :
-  scan_bounds = rasterize_field_of_view [ 0.0, 0.0 ],
-                                        [  left_bound_x,  left_bound_y ],
-                                        [ right_bound_x, right_bound_y ]
+  #scan_bounds = rasterize_field_of_view [ 0.0, 0.0 ],
+  #                                      [  left_bound_x,  left_bound_y ],
+  #                                      [ right_bound_x, right_bound_y ]
+  field_of_view = [ [  near_left_x,  near_left_y ],
+                    [ near_right_x, near_right_y ],
+                    [  far_right_x,  far_right_y ],
+                    [   far_left_x,   far_left_y ] ]
+  scan_bounds = scan_convert field_of_view 
+  #puts scan_bounds
+
+  # DEBUG DEBUG DEBUG :
+  args.outputs.lines << [ [  near_left_x/2.0 + 640,  near_left_y/2.0+ 360,  near_right_x/2.0 + 640, near_right_y/2.0 + 360, 255, 0, 255, 255 ],
+                          [ near_right_x/2.0 + 640, near_right_y/2.0+ 360,   far_right_x/2.0 + 640,  far_right_y/2.0 + 360, 255, 0, 255, 255 ],
+                          [  far_right_x/2.0 + 640,  far_right_y/2.0+ 360,    far_left_x/2.0 + 640,   far_left_y/2.0 + 360, 255, 0, 255, 255 ],
+                          [   far_left_x/2.0 + 640,   far_left_y/2.0+ 360,   near_left_x/2.0 + 640,  near_left_y/2.0 + 360, 255, 0, 255, 255 ] ]
 
   base_x  = ( args.state.player.x / TILE_SIZE ).floor
   base_y  = ( args.state.player.y / TILE_SIZE ).floor
@@ -172,38 +200,56 @@ def tick(args)
   scan_bounds.each do |bounds|
     break if bounds[0].nil? || bounds[1].nil?
 
-    x     = bounds[0][0] - 5
-    max_x = bounds[1][0] + 5
-    y     = bounds[0][1]
+    draw_cross( args.outputs.lines,
+                640 + bounds[0][0]/2.0,
+                360 + bounds[0][1]/2.0,
+                [ 255, 0, 0, 255 ] )
+    #draw_cross( args.outputs.lines,
+    #            640 + bounds[1][0]/2.0,
+    #            360 + bounds[1][1]/2.0,
+    #            [ 0, 255, 0, 255 ] )
+
+    x     = bounds[0][0] - ( bounds[0][0] % TILE_SIZE )
+    max_x = bounds[1][0]
+    y     = bounds[0][1] - ( bounds[0][1] % TILE_SIZE )
     until x >= max_x do
-      tile_index_x  = base_x + x 
-      tile_index_y  = base_y + y 
+      tile_index_x  = base_x + x.div(TILE_SIZE)
+      tile_index_y  = base_y + y.div(TILE_SIZE) 
       tile_index    = args.state.track[tile_index_y][tile_index_x] 
       break if tile_index.nil?
 
-      tile_x        = TILE_SIZE * x - ( args.state.player.x % 8 )
-      tile_y        = TILE_SIZE * y - ( args.state.player.y % 8 )
-      tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
-      #tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
+      #draw_cross( args.outputs.lines,
+      #            640 + x,
+      #            360 + y,
+      #            [ 255, 0, 255, 255 ] )
 
-      x += 1
+      tile_x        = x - ( args.state.player.x % TILE_SIZE )
+      tile_y        = y - ( args.state.player.y % TILE_SIZE )
+      #tile_x        = TILE_SIZE * x - ( args.state.player.x % 8 )
+      #tile_y        = TILE_SIZE * y - ( args.state.player.y % 8 )
+      #tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
+      ##tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
+
+      #x += 1
+      x += TILE_SIZE
       #count += 1
     end
   end
   #puts count
 
-  args.render_target(:road).sprites << tiles
+  #args.render_target(:road).sprites << tiles
+  #args.outputs.sprites << tiles
 
 
   # - 3.2 Rotating :
-  args.render_target(:rotated_road).sprites << {  x:              0,
-                                                  y:              0,
-                                                  w:              1280,
-                                                  h:              720,
-                                                  path:           :road,
-                                                  angle:          -args.state.player.direction,
-                                                  angle_anchor_x: 0.5,
-                                                  angle_anchor_y: 0.5 }
+  #args.render_target(:rotated_road).sprites << {  x:              0,
+  #                                                y:              0,
+  #                                                w:              1280,
+  #                                                h:              720,
+  #                                                path:           :road,
+  #                                                angle:          -args.state.player.direction,
+  #                                                angle_anchor_x: 0.5,
+  #                                                angle_anchor_y: 0.5 }
 
   #args.outputs.sprites << { x:        0,
   #                          y:        0,
@@ -214,32 +260,30 @@ def tick(args)
 
   # - 3.2 Mode 7 rasterizing :
   distance  = 0
-  args.render_target(:scanned_road).sprites << args.state.raster_height.times.map do |y|
-    jump      = 10.0 * y / ( args.state.raster_height - 1 ) + 1
-    distance += jump
-    scale     =  1 - ( 0.9 / 80.0 ) * y
-    #puts "scale: #{scale}"
-    #args.render_target(:scanned_road).sprites << {  x: 80 - 640 * scale,
-    {  x:         80 - 640 * scale,
-       y:         y,
-       w:         1280 * scale,
-       h:         1,
-       path: :rotated_road,
-       source_x: 0,
-       source_y: 368 + distance,
-       source_w: 1280,
-       source_h: 1 }
+  args.render_target(:scanned_road).sprites <<  args.state.raster_height.times.map do |y|
+                                                  jump      = 10.0 * y / ( args.state.raster_height - 1 ) + 1
+                                                  distance += jump
+                                                  scale     =  1 - ( 0.9 / 80.0 ) * y
+                                                  {  x:         80 - 640 * scale,
+                                                     y:         y,
+                                                     w:         1280 * scale,
+                                                     h:         1,
+                                                     path:      :rotated_road,
+                                                     source_x:  0,
+                                                     source_y:  368 + distance,
+                                                     source_w:  1280,
+                                                     source_h:  1 }
   end
 
-  args.outputs.sprites << { x:      0,
-                            y:      0,
-                            w:      SCREEN_WIDTH,
-                            h:      SCREEN_HEIGHT,
-                            path:   :scanned_road,
-                            source_x: 0,
-                            source_y: 0,
-                            source_w: 160,
-                            source_h: 90 }
+  #args.outputs.sprites << { x:      0,
+  #                          y:      0,
+  #                          w:      SCREEN_WIDTH,
+  #                          h:      SCREEN_HEIGHT,
+  #                          path:   :scanned_road,
+  #                          source_x: 0,
+  #                          source_y: 0,
+  #                          source_w: 160,
+  #                          source_h: 90 }
 
 
   # --- 4. Background :
@@ -258,68 +302,127 @@ def blit_tile(tile_index,x,y)
     source_h: TILE_SIZE } 
 end
 
-#def rasterize_field_of_view(p1,p2,p3)
-#  y_sorted_vertices = [ p1, p2, p3 ].sort_by { |p| p[1] }
-#
-#  # Scan the simple side :
-#  dy                = ( y_sorted_vertices.last[1] - y_sorted_vertices.first[1] ).to_i / TILE_SIZE
-#  dx                = ( y_sorted_vertices.last[0] - y_sorted_vertices.first[0] ) / dy
-#  simple_scan       = dy.times.map { |i| [ y_sorted_vertices.first[0] + i * dx, TILE_SIZE * i + y_sorted_vertices.first[1] ] }
-#
-#  # Scan the composite side :
-#  dy1               =   y_sorted_vertices[1][1]   - y_sorted_vertices.first[1]
-#  dx1               = ( y_sorted_vertices[1][0]   - y_sorted_vertices.first[0] ) / dy1
-#  dy2               =   y_sorted_vertices.last[1] - y_sorted_vertices[1][1]
-#  dx2               = ( y_sorted_vertices.last[0] - y_sorted_vertices[1][0] )    / dy2
-#  composite_scan    = dy.times.map do |i| 
-#                        if 8 * i <= dy1 then
-#                          [ y_sorted_vertices.first[0] + 8 * i * dx1, 8 * i + y_sorted_vertices.first[1] ]
-#                        else
-#                          [ y_sorted_vertices[1][0] + ( 8 * i - dy1 ) * dx2, 8 * i + y_sorted_vertices.first[1] ]
-#                        end
-#                      end
-#
-#  # Pack the rasterizing data :
-#  if y_sorted_vertices[1][0] < y_sorted_vertices.first[0] then  # composite on the left
-#    composite_scan.zip  simple_scan
-#  else                                                          # composite on the right
-#    simple_scan.zip     composite_scan
-#  end
-#end
+def scan_convert(vertices)
+  # Sorting vertices :
+  bottom        = vertices.min { |v1,v2| v1[1] <=> v2[1] }
+  bottom_index  = vertices.index bottom
+  top           = vertices.max { |v1,v2| v1[1] <=> v2[1] }
+  top_index     = vertices.index top
 
-def rasterize_field_of_view(p1,p2,p3)
-  y_sorted_vertices = [ p1, p2, p3 ].sort_by { |p| p[1] }.map { |p| [ p[0] / TILE_SIZE, p[1] / TILE_SIZE ] }
+  #puts "top: #{top} - top index: #{top_index} - bottom: #{bottom} - bottom index: #{bottom_index}"
 
-  # Scan the simple side :
-  dy                = ( y_sorted_vertices.last[1] - y_sorted_vertices.first[1] ).to_i
-  dx                = ( y_sorted_vertices.last[0] - y_sorted_vertices.first[0] ) / dy
-  simple_scan       = dy.times.map { |i| [ ( y_sorted_vertices.first[0] + i * dx ).floor, y_sorted_vertices.first[1].floor + i ] }
+  # Winding order :
+  winding_order = bottom[0] - vertices[ ( bottom_index + 1 ) % 4 ][0] < 0 ? -1 : 1 # % 4, because all our polygons are quads
 
-  # Scan the composite side :
-  composite_scan    = []
-  dy1               = ( y_sorted_vertices[1][1] - y_sorted_vertices.first[1] ).round
-  if dy1 != 0 then
-    dx1 = ( y_sorted_vertices[1][0] - y_sorted_vertices.first[0] ) / dy1
-    dy1.times { |i| composite_scan << [ ( y_sorted_vertices.first[0] + i * dx1 ).round, y_sorted_vertices.first[1].round + i ] }
+  # Scan :
+  tile_dy           = ( top[1] - bottom[1] ).div(TILE_SIZE)
+  y                 = 0
+  left_scan         = []
+  right_scan        = []
+  left_index        = bottom_index
+  right_index       = bottom_index
+  next_left_index   = ( bottom_index + winding_order ) % 4
+  next_right_index  = ( bottom_index - winding_order ) % 4
+  left_dy           = vertices[next_left_index][1]  - vertices[left_index][1] 
+  right_dy          = vertices[next_right_index][1] - vertices[right_index][1] 
+  #puts "top index: #{top_index} - bottom index: #{bottom_index}"
+  while y < tile_dy do
+
+    # Left scan :
+    if left_dy > 0.0 then
+      left_dx = ( vertices[next_left_index][0] - vertices[left_index][0] ) / left_dy
+      left_scan << snap( [ vertices[left_index][0] + TILE_SIZE * y * left_dx, bottom[1] + TILE_SIZE * y ] )
+    end
+
+    # Right scan :
+    if right_dy > 0.0 then
+      right_dx = ( vertices[next_right_index][0] - vertices[right_index][0] ) / right_dy
+      right_scan << snap( [ vertices[right_index][0] + TILE_SIZE * y * right_dx, bottom[1] + TILE_SIZE * y ] )
+    end
+
+    y += 1
+
+    if y * TILE_SIZE + bottom[1] >= vertices[next_left_index][1] then
+      left_index        = ( left_index + winding_order ) % 4
+      next_left_index   = ( next_left_index + winding_order ) % 4
+      left_dy           = vertices[next_left_index][1]  - vertices[left_index][1] 
+    end
+
+    if y * TILE_SIZE + bottom[1] >= vertices[next_right_index][1] then
+      right_index        = ( right_index - winding_order ) % 4
+      next_right_index   = ( next_right_index - winding_order ) % 4
+      right_dy           = vertices[next_right_index][1]  - vertices[right_index][1] 
+    end
+
+    #puts "#{y}=> left index: #{left_index}->#{next_left_index}; right index: #{right_index}->#{next_right_index}"
   end
 
-  dy2               = ( y_sorted_vertices.last[1] - y_sorted_vertices[1][1]    ).round
-  if dy2 != 0 then
-    dx2 = ( y_sorted_vertices.last[0] - y_sorted_vertices[1][0] ) / dy2
-    dy2.times { |i| composite_scan << [ ( y_sorted_vertices[1][0] + i * dx2 ).round, y_sorted_vertices[1][1].round + i ] }
-  end
+
+  # Scan the left side :
+  #left_scan = []
+  #index     = bottom_index
+  #loop do
+  #  # Scan :
+  #  next_index  = ( index + winding_order ) % 4
+  #  dy          = vertices[next_index][1] - vertices[index][1]
+  #  #puts "left scan dy: #{dy}"
+  #  if dy > 0.0 then
+  #    dx = ( vertices[next_index][0] - vertices[index][0] ) / dy
+  #    ( dy.div(TILE_SIZE) + 0 ).times { |i| left_scan << snap( [ vertices[index][0] + TILE_SIZE * i * dx, vertices[index][1] + TILE_SIZE * i ] ) }
+  #  end
+
+  #  # Iterate :
+  #  break if vertices[next_index] == top
+  #  index       = next_index
+  #end
+  ##puts left_scan
+
+  ## Scan the right side :
+  #right_scan  = []
+  #index     = bottom_index
+  #loop do
+  #  # Scan :
+  #  next_index  = ( index - winding_order ) % 4
+  #  dy          = vertices[next_index][1] - vertices[index][1]
+  #  #puts "right scan dy: #{dy}"
+  #  if dy > 0.0 then
+  #    dx = ( vertices[next_index][0] - vertices[index][0] ) / dy
+  #    ( dy.div(TILE_SIZE) + 0 ).times { |i| right_scan << snap( [ vertices[index][0] + TILE_SIZE * i * dx, vertices[index][1] + TILE_SIZE * i ] ) }
+  #  end
+
+  #  # Iterate :
+  #  break if vertices[next_index] == top
+  #  index       = next_index
+  #end
+  ##puts right_scan
+  
+  puts "tchigau!!!" if left_scan.length != right_scan.length
 
   # Pack the rasterizing data :
-  if y_sorted_vertices[1][0] < y_sorted_vertices.first[0] then  # composite on the left
-    composite_scan.zip  simple_scan
-  else                                                          # composite on the right
-    simple_scan.zip     composite_scan
+  left_scan.zip right_scan
+end
+
+def clean_left_scan(scan)
+  scan.each_cons(2).map do |vertices|
+    if vertices[0][1] == vertices[1][1] then
+      vertices[0][0] <= vertices[1][0] ? vertices[0] : vertices[1]
+    else
+      vertices[0]
+    end
   end
+end
+
+def clean_right_scan(scan)
+  
 end
 
 def draw_cross(dest,x,y,color)
   dest << [ x - 2, y - 2, x + 2, y + 2 ] + color
   dest << [ x - 2, y + 2, x + 2, y - 2 ] + color
+end
+
+def snap(v)
+  [ v[0] - ( v[0] % TILE_SIZE ), v[1] - ( v[1] % TILE_SIZE ) ]
 end
 
 def inc(v)
