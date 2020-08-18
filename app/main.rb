@@ -163,10 +163,6 @@ def tick(args)
   # - 3.1 Blitting tile map :
 
   # - Field of view bounds :
-  #left_bound_x  = args.state.player.ux * args.state.field_depth - args.state.player.vx * args.state.field_width
-  #left_bound_y  = args.state.player.uy * args.state.field_depth - args.state.player.vy * args.state.field_width
-  #right_bound_x = args.state.player.ux * args.state.field_depth + args.state.player.vx * args.state.field_width
-  #right_bound_y = args.state.player.uy * args.state.field_depth + args.state.player.vy * args.state.field_width
   near_left_x   = args.state.player.ux * args.state.near - args.state.player.vx * args.state.near_focal
   near_left_y   = args.state.player.uy * args.state.near - args.state.player.vy * args.state.near_focal
   near_right_x  = args.state.player.ux * args.state.near + args.state.player.vx * args.state.near_focal
@@ -177,15 +173,12 @@ def tick(args)
   far_right_y   = args.state.player.uy * args.state.far  + args.state.player.vy * args.state.far_focal
 
   # - Field of view content :
-  #scan_bounds = rasterize_field_of_view [ 0.0, 0.0 ],
-  #                                      [  left_bound_x,  left_bound_y ],
-  #                                      [ right_bound_x, right_bound_y ]
   field_of_view = [ [  near_left_x,  near_left_y ],
                     [ near_right_x, near_right_y ],
                     [  far_right_x,  far_right_y ],
                     [   far_left_x,   far_left_y ] ]
   scan_bounds = scan_convert field_of_view 
-  #puts scan_bounds
+
 
   # DEBUG DEBUG DEBUG :
   args.outputs.lines << [ [  near_left_x/2.0 + 640,  near_left_y/2.0+ 360,  near_right_x/2.0 + 640, near_right_y/2.0 + 360, 255, 0, 255, 255 ],
@@ -193,21 +186,18 @@ def tick(args)
                           [  far_right_x/2.0 + 640,  far_right_y/2.0+ 360,    far_left_x/2.0 + 640,   far_left_y/2.0 + 360, 255, 0, 255, 255 ],
                           [   far_left_x/2.0 + 640,   far_left_y/2.0+ 360,   near_left_x/2.0 + 640,  near_left_y/2.0 + 360, 255, 0, 255, 255 ] ]
 
-  base_x  = ( args.state.player.x / TILE_SIZE ).floor
-  base_y  = ( args.state.player.y / TILE_SIZE ).floor
+  base_x  = args.state.player.x.div( TILE_SIZE )
+  base_y  = args.state.player.y.div( TILE_SIZE )
   tiles   = []
-  #count   = 0
   scan_bounds.each do |bounds|
     break if bounds[0].nil? || bounds[1].nil?
 
-    draw_cross( args.outputs.lines,
-                640 + bounds[0][0]/2.0,
-                360 + bounds[0][1]/2.0,
+    draw_cross( [ 640 + bounds[0][0]/2.0,
+                  360 + bounds[0][1]/2.0 ],
                 [ 255, 0, 0, 255 ] )
-    #draw_cross( args.outputs.lines,
-    #            640 + bounds[1][0]/2.0,
-    #            360 + bounds[1][1]/2.0,
-    #            [ 0, 255, 0, 255 ] )
+    draw_cross( [ 640 + bounds[1][0]/2.0,
+                  360 + bounds[1][1]/2.0 ],
+                [ 0, 255, 0, 255 ] )
 
     x     = bounds[0][0] - ( bounds[0][0] % TILE_SIZE )
     max_x = bounds[1][0]
@@ -216,29 +206,27 @@ def tick(args)
       tile_index_x  = base_x + x.div(TILE_SIZE)
       tile_index_y  = base_y + y.div(TILE_SIZE) 
       tile_index    = args.state.track[tile_index_y][tile_index_x] 
+      #puts "base x: #{base_x} - y: #{base_y} x: #{x} - y: #{y} - tile index x: #{tile_index_x} - y: #{tile_index_y} - index: #{tile_index}"
       break if tile_index.nil?
 
-      #draw_cross( args.outputs.lines,
-      #            640 + x,
-      #            360 + y,
-      #            [ 255, 0, 255, 255 ] )
+      draw_cross( [ 640 + x/2.0,
+                    360 + y/2.0 ],
+                  [ 255, 0, 255, 255 ] )
 
       tile_x        = x - ( args.state.player.x % TILE_SIZE )
       tile_y        = y - ( args.state.player.y % TILE_SIZE )
-      #tile_x        = TILE_SIZE * x - ( args.state.player.x % 8 )
-      #tile_y        = TILE_SIZE * y - ( args.state.player.y % 8 )
-      #tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
+      tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
       ##tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
 
-      #x += 1
       x += TILE_SIZE
-      #count += 1
     end
   end
-  #puts count
 
+  #puts tiles.last
   #args.render_target(:road).sprites << tiles
-  #args.outputs.sprites << tiles
+  args.outputs.sprites << tiles
+
+  #args.outputs.sprites << {x: 100, y: 100, w: 64, h: 64, path: "/data/big_tiles.png", source_x: 0, source_y: 1024-64, source_w:64, source_h: 64 }
 
 
   # - 3.2 Rotating :
@@ -287,7 +275,7 @@ def tick(args)
 
 
   # --- 4. Background :
-  args.outputs.solids << [ 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 50, 50, 50, 255 ]
+  #args.outputs.solids << [ 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 50, 50, 50, 255 ]
 end
 
 def blit_tile(tile_index,x,y)
@@ -296,131 +284,63 @@ def blit_tile(tile_index,x,y)
     w:        TILE_SIZE,
     h:        TILE_SIZE,
     path:     TILESHEET,
-    source_x:       TILE_SIZE * ( tile_index %   TILESHEET_WIDTH ),
-    source_y: 720 - TILE_SIZE * ( tile_index.div(TILESHEET_WIDTH) + 1 ),
+    source_x: TILE_SIZE * ( tile_index %   TILESHEET_WIDTH ),
+    source_y: 1024 - TILE_SIZE * ( tile_index.div(TILESHEET_WIDTH) + 0 ),
     source_w: TILE_SIZE,
     source_h: TILE_SIZE } 
 end
 
 def scan_convert(vertices)
-  # Sorting vertices :
+  # 1. Sorting vertices :
   bottom        = vertices.min { |v1,v2| v1[1] <=> v2[1] }
   bottom_index  = vertices.index bottom
   top           = vertices.max { |v1,v2| v1[1] <=> v2[1] }
   top_index     = vertices.index top
 
-  #puts "top: #{top} - top index: #{top_index} - bottom: #{bottom} - bottom index: #{bottom_index}"
-
-  # Winding order :
-  winding_order = bottom[0] - vertices[ ( bottom_index + 1 ) % 4 ][0] < 0 ? -1 : 1 # % 4, because all our polygons are quads
-
-  # Scan :
+  # 2. Scan :
   tile_dy           = ( top[1] - bottom[1] ).div(TILE_SIZE)
   y                 = 0
   left_scan         = []
   right_scan        = []
   left_index        = bottom_index
   right_index       = bottom_index
-  next_left_index   = ( bottom_index + winding_order ) % 4
-  next_right_index  = ( bottom_index - winding_order ) % 4
+  next_left_index   = ( bottom_index + 1 ) % 4
+  next_right_index  = ( bottom_index - 1 ) % 4
   left_dy           = vertices[next_left_index][1]  - vertices[left_index][1] 
   right_dy          = vertices[next_right_index][1] - vertices[right_index][1] 
-  #puts "top index: #{top_index} - bottom index: #{bottom_index}"
   while y < tile_dy do
+    raster_y  = bottom[1] + TILE_SIZE * y
 
-    # Left scan :
+    # 2.1 Left scan :
     if left_dy > 0.0 then
-      left_dx = ( vertices[next_left_index][0] - vertices[left_index][0] ) / left_dy
-      #left_scan << snap( [ vertices[left_index][0] + ( TILE_SIZE * y + bottom[1] ) * left_dx, bottom[1] + TILE_SIZE * y ] )
-      left_scan << [ vertices[left_index][0] + ( TILE_SIZE * y + bottom[1] ) * left_dx, bottom[1] + TILE_SIZE * y ]
+      left_dx   = ( vertices[next_left_index][0] - vertices[left_index][0] ) / left_dy
+      left_scan << [ vertices[left_index][0] + ( raster_y - vertices[left_index][1] ) * left_dx, bottom[1] + TILE_SIZE * y ]
     end
 
-    # Right scan :
+    # 2.2 Right scan :
     if right_dy > 0.0 then
       right_dx = ( vertices[next_right_index][0] - vertices[right_index][0] ) / right_dy
-      #right_scan << snap( [ vertices[right_index][0] + ( TILE_SIZE * y + bottom[1] ) * right_dx, bottom[1] + TILE_SIZE * y ] )
-      right_scan << [ vertices[right_index][0] + ( TILE_SIZE * y + bottom[1] ) * right_dx, bottom[1] + TILE_SIZE * y ]
+      right_scan << [ vertices[right_index][0] + ( raster_y - vertices[right_index][1] ) * right_dx, bottom[1] + TILE_SIZE * y ]
     end
 
     y += 1
 
     if y * TILE_SIZE + bottom[1] >= vertices[next_left_index][1] then
-      left_index        = ( left_index + winding_order ) % 4
-      next_left_index   = ( next_left_index + winding_order ) % 4
+      left_index        = ( left_index + 1 ) % 4
+      next_left_index   = ( left_index + 1 ) % 4
       left_dy           = vertices[next_left_index][1]  - vertices[left_index][1] 
     end
 
     if y * TILE_SIZE + bottom[1] >= vertices[next_right_index][1] then
-      right_index        = ( right_index - winding_order ) % 4
-      next_right_index   = ( next_right_index - winding_order ) % 4
+      right_index        = ( right_index - 1 ) % 4
+      next_right_index   = ( right_index - 1 ) % 4
       right_dy           = vertices[next_right_index][1]  - vertices[right_index][1] 
     end
 
-    #puts "#{y}=> left index: #{left_index}->#{next_left_index}; right index: #{right_index}->#{next_right_index}"
   end
 
-
-  # Scan the left side :
-  #left_scan = []
-  #index     = bottom_index
-  #loop do
-  #  # Scan :
-  #  next_index  = ( index + winding_order ) % 4
-  #  dy          = vertices[next_index][1] - vertices[index][1]
-  #  #puts "left scan dy: #{dy}"
-  #  if dy > 0.0 then
-  #    dx = ( vertices[next_index][0] - vertices[index][0] ) / dy
-  #    ( dy.div(TILE_SIZE) + 0 ).times { |i| left_scan << snap( [ vertices[index][0] + TILE_SIZE * i * dx, vertices[index][1] + TILE_SIZE * i ] ) }
-  #  end
-
-  #  # Iterate :
-  #  break if vertices[next_index] == top
-  #  index       = next_index
-  #end
-  ##puts left_scan
-
-  ## Scan the right side :
-  #right_scan  = []
-  #index     = bottom_index
-  #loop do
-  #  # Scan :
-  #  next_index  = ( index - winding_order ) % 4
-  #  dy          = vertices[next_index][1] - vertices[index][1]
-  #  #puts "right scan dy: #{dy}"
-  #  if dy > 0.0 then
-  #    dx = ( vertices[next_index][0] - vertices[index][0] ) / dy
-  #    ( dy.div(TILE_SIZE) + 0 ).times { |i| right_scan << snap( [ vertices[index][0] + TILE_SIZE * i * dx, vertices[index][1] + TILE_SIZE * i ] ) }
-  #  end
-
-  #  # Iterate :
-  #  break if vertices[next_index] == top
-  #  index       = next_index
-  #end
-  ##puts right_scan
-  
-  puts "tchigau!!!" if left_scan.length != right_scan.length
-
-  # Pack the rasterizing data :
+  # 3. Pack the rasterizing data :
   left_scan.zip right_scan
-end
-
-def clean_left_scan(scan)
-  scan.each_cons(2).map do |vertices|
-    if vertices[0][1] == vertices[1][1] then
-      vertices[0][0] <= vertices[1][0] ? vertices[0] : vertices[1]
-    else
-      vertices[0]
-    end
-  end
-end
-
-def clean_right_scan(scan)
-  
-end
-
-def draw_cross(dest,x,y,color)
-  dest << [ x - 2, y - 2, x + 2, y + 2 ] + color
-  dest << [ x - 2, y + 2, x + 2, y - 2 ] + color
 end
 
 def snap(v)
@@ -437,4 +357,9 @@ def dec(v)
   if v <= 2.0 then  v / 2.0
   else              v - 1.0
   end
+end
+
+def draw_cross(position,color)
+  $gtk.args.outputs.lines << [ position[0] - 5, position[1] - 5, position[0] + 5, position[1] + 5 ] + color
+  $gtk.args.outputs.lines << [ position[0] - 5, position[1] + 5, position[0] + 5, position[1] - 5 ] + color
 end
