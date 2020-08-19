@@ -3,7 +3,7 @@
  <tileset firstgid="1" source="sections.tsx"/>
  <layer id="1" name="Tile Layer 1" width="32" height="32">
   <data encoding="base64" compression="zstd">
-   KLUv/WAAD30JAHKMHypg6YoCoErvBKBSBQ8FVAH+BxhDiJg/KRuk4V8hGXj+RwIJeD4PCSRSvw8XtxhNXELE+or2mepCGcc4yx/uUHGKghO43ooonQRxkDtuM+B8c9hf93jjNckjP93UcIZ73jlwyicHB/o+mmcue+yrYH556qiEI3zhCgC/XeABv0yggR4IABGZXACwAgoGrFQAzaiADRC2s9wrSsBGlOks16sNnM5FpGiYRnqEoQ2g06/YvdIASs8Ig9Jb1mBO8AHivIVkQMIHVgawD0Qz4QMos9XGQOkV4bzHBnLSblMbRFjHAQNFk2vH3fA2eS8NtKQhYWEmvw64pOEKk62Ha+DYYn9bcKeBEv6BYYDEWjqV+oFIA0vGBP9YVibhAlUmwBQqRYMpukcG09Epy9XyAw==
+   KLUv/WAAD/0IADJMHB8gyTsDgCbTANE/DEDVp/86/yvNMF3/lOYKil6UZkg/Bi/QCDwgM7podVXoAeEHDPe9R/AB2melkxgAnG8WP4Ur3qpZXvnppoQnznK8cc87vO+O+UV2yB82hzdQPnnqqC9IHjnoH9xv1z33uuuxw44ITaBxpggyMroAoAIKBq5UAM2ogI0I013u27KwFdJ2l/PdBkjnITMqppKejW0y8XzTAEqfGQamXarBmXiIZgkgH8DwgZQAhAai19ABlNpgY6D0irBeYWMxsv7mm5hZxw9UdrswWvhxm9xhF2IGUlaocDOTiQMu/1CpievhGjhn1T8E8Gkgwh8wDDi9lk6lfiLSIBJm/7e2dMMVqpkLU1SMCNPoiA4molOWK/oH
   </data>
  </layer>
 </map>

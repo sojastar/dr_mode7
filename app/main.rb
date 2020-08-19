@@ -14,8 +14,8 @@ DISPLAY_WIDTH         = 160
 DISPLAY_HEIGHT        = 90
 
 TILESHEET             = "/data/big_tiles.png"
-TILESHEET_WIDTH       = 32    # in tiles 
-TILESHEET_HEIGHT      = 32
+TILESHEET_WIDTH       = 16    # in tiles 
+TILESHEET_HEIGHT      = 16
 TILE_SIZE             = 64    # in pixels
 
 PIXEL_SCALE           = 8
@@ -177,26 +177,28 @@ def tick(args)
                     [ near_right_x, near_right_y ],
                     [  far_right_x,  far_right_y ],
                     [   far_left_x,   far_left_y ] ]
-  scan_bounds = scan_convert field_of_view 
+  scaned_field  = scan_convert  field_of_view 
+  field_bounds  = find_bounds   field_of_view
 
 
   # DEBUG DEBUG DEBUG :
-  args.outputs.lines << [ [  near_left_x/2.0 + 640,  near_left_y/2.0+ 360,  near_right_x/2.0 + 640, near_right_y/2.0 + 360, 255, 0, 255, 255 ],
-                          [ near_right_x/2.0 + 640, near_right_y/2.0+ 360,   far_right_x/2.0 + 640,  far_right_y/2.0 + 360, 255, 0, 255, 255 ],
-                          [  far_right_x/2.0 + 640,  far_right_y/2.0+ 360,    far_left_x/2.0 + 640,   far_left_y/2.0 + 360, 255, 0, 255, 255 ],
-                          [   far_left_x/2.0 + 640,   far_left_y/2.0+ 360,   near_left_x/2.0 + 640,  near_left_y/2.0 + 360, 255, 0, 255, 255 ] ]
+  args.outputs.lines << [ [  near_left_x + 640,  near_left_y + 360,  near_right_x + 640, near_right_y + 360, 255, 0, 255, 255 ],
+                          [ near_right_x + 640, near_right_y + 360,   far_right_x + 640,  far_right_y + 360, 255, 0, 255, 255 ],
+                          [  far_right_x + 640,  far_right_y + 360,    far_left_x + 640,   far_left_y + 360, 255, 0, 255, 255 ],
+                          [   far_left_x + 640,   far_left_y + 360,   near_left_x + 640,  near_left_y + 360, 255, 0, 255, 255 ] ]
+  args.outputs.borders << [ field_bounds[0] + 640, field_bounds[1] + 360, field_bounds[2], field_bounds[3] ] + [ 255, 0, 0, 255 ]
 
   base_x  = args.state.player.x.div( TILE_SIZE )
   base_y  = args.state.player.y.div( TILE_SIZE )
   tiles   = []
-  scan_bounds.each do |bounds|
+  scaned_field.each do |bounds|
     break if bounds[0].nil? || bounds[1].nil?
 
-    draw_cross( [ 640 + bounds[0][0]/2.0,
-                  360 + bounds[0][1]/2.0 ],
+    draw_cross( [ 640 + bounds[0][0],
+                  360 + bounds[0][1] ],
                 [ 255, 0, 0, 255 ] )
-    draw_cross( [ 640 + bounds[1][0]/2.0,
-                  360 + bounds[1][1]/2.0 ],
+    draw_cross( [ 640 + bounds[1][0],
+                  360 + bounds[1][1] ],
                 [ 0, 255, 0, 255 ] )
 
     x     = bounds[0][0] - ( bounds[0][0] % TILE_SIZE )
@@ -206,27 +208,25 @@ def tick(args)
       tile_index_x  = base_x + x.div(TILE_SIZE)
       tile_index_y  = base_y + y.div(TILE_SIZE) 
       tile_index    = args.state.track[tile_index_y][tile_index_x] 
-      #puts "base x: #{base_x} - y: #{base_y} x: #{x} - y: #{y} - tile index x: #{tile_index_x} - y: #{tile_index_y} - index: #{tile_index}"
+
       break if tile_index.nil?
 
-      draw_cross( [ 640 + x/2.0,
-                    360 + y/2.0 ],
+      draw_cross( [ 640 + x,
+                    360 + y ],
                   [ 255, 0, 255, 255 ] )
+      $gtk.args.outputs.labels << { x: 642 + x, y: 382 + y, text: "#{tile_index_x},#{tile_index_y}", size_enum: -5 }
+      $gtk.args.outputs.labels << { x: 642 + x, y: 402 + y, text: "#{tile_index}", size_enum: -5 }
 
       tile_x        = x - ( args.state.player.x % TILE_SIZE )
       tile_y        = y - ( args.state.player.y % TILE_SIZE )
       tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
-      ##tiles << blit_tile( tile_index, 360 + tile_x, 360 + tile_y )
 
       x += TILE_SIZE
     end
   end
 
-  #puts tiles.last
   #args.render_target(:road).sprites << tiles
   args.outputs.sprites << tiles
-
-  #args.outputs.sprites << {x: 100, y: 100, w: 64, h: 64, path: "/data/big_tiles.png", source_x: 0, source_y: 1024-64, source_w:64, source_h: 64 }
 
 
   # - 3.2 Rotating :
@@ -275,7 +275,7 @@ def tick(args)
 
 
   # --- 4. Background :
-  #args.outputs.solids << [ 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 50, 50, 50, 255 ]
+  args.outputs.solids << [ 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 50, 50, 50, 255 ]
 end
 
 def blit_tile(tile_index,x,y)
@@ -285,7 +285,7 @@ def blit_tile(tile_index,x,y)
     h:        TILE_SIZE,
     path:     TILESHEET,
     source_x: TILE_SIZE * ( tile_index %   TILESHEET_WIDTH ),
-    source_y: 1024 - TILE_SIZE * ( tile_index.div(TILESHEET_WIDTH) + 0 ),
+    source_y: 1024 - TILE_SIZE * ( tile_index.div(TILESHEET_WIDTH) + 1 ),
     source_w: TILE_SIZE,
     source_h: TILE_SIZE } 
 end
@@ -343,8 +343,13 @@ def scan_convert(vertices)
   left_scan.zip right_scan
 end
 
-def snap(v)
-  [ v[0] - ( v[0] % TILE_SIZE ), v[1] - ( v[1] % TILE_SIZE ) ]
+def find_bounds(vertices)
+  x_min = vertices.min { |v1,v2| v1[0] <=> v2[0] }[0]
+  x_max = vertices.max { |v1,v2| v1[0] <=> v2[0] }[0]
+  y_min = vertices.min { |v1,v2| v1[1] <=> v2[1] }[1]
+  y_max = vertices.max { |v1,v2| v1[1] <=> v2[1] }[1]
+
+  [ x_min, y_min, x_max - x_min, y_max - y_min ]
 end
 
 def inc(v)
