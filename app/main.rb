@@ -1,4 +1,5 @@
-#require 'lib/mode7.rb'
+require 'lib/renderer.rb'
+require 'lib/trigo.rb'
 
 
 
@@ -26,11 +27,13 @@ RASTER_SCAN_MIN       = 1.0/24.0
 #ROAD_SIZE             = 636
 #ROTATED_ROAD_MAX_SIZE = 900
 
+FOCAL                 = 45.0
 #CAMERA_OFFSET         = 48
-NEAR                  = 32
-NEAR_FOCAL            = 80
-FAR                   = 512 
-FAR_FOCAL             = 400
+NEAR                  = 64
+#NEAR_FOCAL            = 80
+FAR                   = 512
+#FAR_FOCAL             = 400
+CENTER                = 192
 
 #FIELD_DEPTH           = 400#120
 #FIELD_WIDTH           = 200#60
@@ -59,10 +62,12 @@ def setup(args)
   #args.state.field_depth      = FIELD_DEPTH
   #args.state.field_width      = FIELD_WIDTH
   
+  args.state.focal            = FOCAL
   args.state.near             = NEAR
-  args.state.near_focal       = NEAR_FOCAL
+  #args.state.near_focal       = NEAR_FOCAL
   args.state.far              = FAR
-  args.state.far_focal        = FAR_FOCAL
+  #args.state.far_focal        = FAR_FOCAL
+  args.state.center           = CENTER
 
   args.state.raster_height    = RASTER_HEIGHT
   #args.state.raster_scan_min  = RASTER_SCAN_MIN
@@ -72,6 +77,10 @@ def setup(args)
 
   #args.state.focal            = FOCAL
   #args.state.height           = RASTER_HEIGHT
+  args.state.renderer         = Mode7::Renderer.new args.state.focal,
+                                                    args.state.near,
+                                                    args.state.far,
+                                                    args.state.center
 
   #args.render_target(:road).width   = 720
   #args.render_target(:road).height  = 720
@@ -162,31 +171,22 @@ def tick(args)
 
   # - 3.1 Blitting tile map :
 
-  # - Field of view bounds :
-  near_left_x   = args.state.player.ux * args.state.near - args.state.player.vx * args.state.near_focal
-  near_left_y   = args.state.player.uy * args.state.near - args.state.player.vy * args.state.near_focal
-  near_right_x  = args.state.player.ux * args.state.near + args.state.player.vx * args.state.near_focal
-  near_right_y  = args.state.player.uy * args.state.near + args.state.player.vy * args.state.near_focal
-  far_left_x    = args.state.player.ux * args.state.far  - args.state.player.vx * args.state.far_focal
-  far_left_y    = args.state.player.uy * args.state.far  - args.state.player.vy * args.state.far_focal
-  far_right_x   = args.state.player.ux * args.state.far  + args.state.player.vx * args.state.far_focal
-  far_right_y   = args.state.player.uy * args.state.far  + args.state.player.vy * args.state.far_focal
-
   # - Field of view content :
-  field_of_view = [ [  near_left_x,  near_left_y ],
-                    [ near_right_x, near_right_y ],
-                    [  far_right_x,  far_right_y ],
-                    [   far_left_x,   far_left_y ] ]
-  scaned_field  = scan_convert  field_of_view 
-  field_bounds  = find_bounds   field_of_view
+  field_of_view, center = args.state.renderer.compute_field_of_view args.state.player.ux,
+                                                                    args.state.player.uy,
+                                                                    args.state.player.vx,
+                                                                    args.state.player.vy
+  scaned_field          = scan_convert  field_of_view 
+  field_bounds          = find_bounds   field_of_view
 
 
   # DEBUG DEBUG DEBUG :
-  args.outputs.lines << [ [  near_left_x + 640,  near_left_y + 360,  near_right_x + 640, near_right_y + 360, 255, 0, 255, 255 ],
-                          [ near_right_x + 640, near_right_y + 360,   far_right_x + 640,  far_right_y + 360, 255, 0, 255, 255 ],
-                          [  far_right_x + 640,  far_right_y + 360,    far_left_x + 640,   far_left_y + 360, 255, 0, 255, 255 ],
-                          [   far_left_x + 640,   far_left_y + 360,   near_left_x + 640,  near_left_y + 360, 255, 0, 255, 255 ] ]
-  args.outputs.borders << [ field_bounds[0] + 640, field_bounds[1] + 360, field_bounds[2], field_bounds[3] ] + [ 255, 0, 0, 255 ]
+  args.outputs.lines << [ [ field_of_view[0][0] - field_bounds[0], field_of_view[0][1] - field_bounds[1], field_of_view[1][0] - field_bounds[0], field_of_view[1][1] - field_bounds[1], 255, 0, 255, 255 ],
+                          [ field_of_view[1][0] - field_bounds[0], field_of_view[1][1] - field_bounds[1], field_of_view[2][0] - field_bounds[0], field_of_view[2][1] - field_bounds[1], 255, 0, 255, 255 ],
+                          [ field_of_view[2][0] - field_bounds[0], field_of_view[2][1] - field_bounds[1], field_of_view[3][0] - field_bounds[0], field_of_view[3][1] - field_bounds[1], 255, 0, 255, 255 ],
+                          [ field_of_view[3][0] - field_bounds[0], field_of_view[3][1] - field_bounds[1], field_of_view[0][0] - field_bounds[0], field_of_view[0][1] - field_bounds[1], 255, 0, 255, 255 ] ]
+  draw_cross [center[0] - field_bounds[0], center[1] - field_bounds[1]], [255, 0, 0, 255]
+  args.outputs.borders << [ field_bounds[0] - field_bounds[0], field_bounds[1] - field_bounds[1], field_bounds[2], field_bounds[3] ] + [ 255, 0, 0, 255 ]
 
   base_x  = args.state.player.x.div( TILE_SIZE )
   base_y  = args.state.player.y.div( TILE_SIZE )
@@ -194,11 +194,11 @@ def tick(args)
   scaned_field.each do |bounds|
     break if bounds[0].nil? || bounds[1].nil?
 
-    draw_cross( [ 640 + bounds[0][0],
-                  360 + bounds[0][1] ],
+    draw_cross( [ bounds[0][0] - field_bounds[0],
+                  bounds[0][1] - field_bounds[1] ],
                 [ 255, 0, 0, 255 ] )
-    draw_cross( [ 640 + bounds[1][0],
-                  360 + bounds[1][1] ],
+    draw_cross( [ bounds[1][0] - field_bounds[0],
+                  bounds[1][1] - field_bounds[1] ],
                 [ 0, 255, 0, 255 ] )
 
     x     = bounds[0][0] - ( bounds[0][0] % TILE_SIZE )
@@ -211,15 +211,15 @@ def tick(args)
 
       break if tile_index.nil?
 
-      draw_cross( [ 640 + x,
-                    360 + y ],
+      draw_cross( [ x - field_bounds[0],
+                    y - field_bounds[1] ],
                   [ 255, 0, 255, 255 ] )
-      $gtk.args.outputs.labels << { x: 642 + x, y: 382 + y, text: "#{tile_index_x},#{tile_index_y}", size_enum: -5 }
-      $gtk.args.outputs.labels << { x: 642 + x, y: 402 + y, text: "#{tile_index}", size_enum: -5 }
+      $gtk.args.outputs.labels << { x: x - field_bounds[0], y: y - field_bounds[1], text: "#{tile_index_x},#{tile_index_y}", size_enum: -5 }
+      $gtk.args.outputs.labels << { x: x - field_bounds[0], y: y - field_bounds[1], text: "#{tile_index}", size_enum: -5 }
 
       tile_x        = x - ( args.state.player.x % TILE_SIZE )
       tile_y        = y - ( args.state.player.y % TILE_SIZE )
-      tiles << blit_tile( tile_index, 640 + tile_x, 360 + tile_y )
+      tiles << blit_tile( tile_index, tile_x - field_bounds[0], tile_y - field_bounds[1] )
 
       x += TILE_SIZE
     end
