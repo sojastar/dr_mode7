@@ -44,16 +44,16 @@ module Mode7
     def compute_field_of_view(ux,uy,vx,vy)
 
       # --- Near plan :
-      near_left_x   = ux * @near - vx * @near_fov_width
-      near_left_y   = uy * @near - vy * @near_fov_width
-      near_right_x  = ux * @near + vx * @near_fov_width
-      near_right_y  = uy * @near + vy * @near_fov_width
+      near_left_x   = ux * ( @center - @near ) - vx * @near_fov_width
+      near_left_y   = uy * ( @center - @near ) - vy * @near_fov_width
+      near_right_x  = ux * ( @center - @near ) + vx * @near_fov_width
+      near_right_y  = uy * ( @center - @near ) + vy * @near_fov_width
 
       # --- Far plan :
-      far_left_x    = ux * @far  - vx * @far_fov_width
-      far_left_y    = uy * @far  - vy * @far_fov_width
-      far_right_x   = ux * @far  + vx * @far_fov_width
-      far_right_y   = uy * @far  + vy * @far_fov_width
+      far_left_x    = ux * ( @far - @center )  - vx * @far_fov_width
+      far_left_y    = uy * ( @far - @center )  - vy * @far_fov_width
+      far_right_x   = ux * ( @far - @center )  + vx * @far_fov_width
+      far_right_y   = uy * ( @far - @center )  + vy * @far_fov_width
 
       # --- Rotation center :
       center_x      = ux * @center

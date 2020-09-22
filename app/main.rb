@@ -33,7 +33,7 @@ NEAR                  = 64
 #NEAR_FOCAL            = 80
 FAR                   = 512
 #FAR_FOCAL             = 400
-CENTER                = 192
+CENTER                = 64
 
 #FIELD_DEPTH           = 400#120
 #FIELD_WIDTH           = 200#60
@@ -178,15 +178,23 @@ def tick(args)
                                                                     args.state.player.vy
   scaned_field          = scan_convert  field_of_view 
   field_bounds          = find_bounds   field_of_view
+  puts field_bounds
+
+  rectangle = [ field_bounds[0] - field_bounds[0], field_bounds[1] - field_bounds[1], field_bounds[2], field_bounds[3] ]
+  args.render_target(:road).width   = rectangle[2]
+  args.render_target(:road).height  = rectangle[3]
 
 
   # DEBUG DEBUG DEBUG :
-  args.outputs.lines << [ [ field_of_view[0][0] - field_bounds[0], field_of_view[0][1] - field_bounds[1], field_of_view[1][0] - field_bounds[0], field_of_view[1][1] - field_bounds[1], 255, 0, 255, 255 ],
-                          [ field_of_view[1][0] - field_bounds[0], field_of_view[1][1] - field_bounds[1], field_of_view[2][0] - field_bounds[0], field_of_view[2][1] - field_bounds[1], 255, 0, 255, 255 ],
-                          [ field_of_view[2][0] - field_bounds[0], field_of_view[2][1] - field_bounds[1], field_of_view[3][0] - field_bounds[0], field_of_view[3][1] - field_bounds[1], 255, 0, 255, 255 ],
-                          [ field_of_view[3][0] - field_bounds[0], field_of_view[3][1] - field_bounds[1], field_of_view[0][0] - field_bounds[0], field_of_view[0][1] - field_bounds[1], 255, 0, 255, 255 ] ]
-  draw_cross [center[0] - field_bounds[0], center[1] - field_bounds[1]], [255, 0, 0, 255]
-  args.outputs.borders << [ field_bounds[0] - field_bounds[0], field_bounds[1] - field_bounds[1], field_bounds[2], field_bounds[3] ] + [ 255, 0, 0, 255 ]
+  #args.outputs.lines << [ [ field_of_view[0][0] - field_bounds[0], field_of_view[0][1] - field_bounds[1], field_of_view[1][0] - field_bounds[0], field_of_view[1][1] - field_bounds[1], 255, 0, 255, 255 ],
+  args.render_target(:road).lines <<  [ [ field_of_view[0][0] - field_bounds[0], field_of_view[0][1] - field_bounds[1], field_of_view[1][0] - field_bounds[0], field_of_view[1][1] - field_bounds[1], 255, 0, 255, 255 ],
+                                        [ field_of_view[1][0] - field_bounds[0], field_of_view[1][1] - field_bounds[1], field_of_view[2][0] - field_bounds[0], field_of_view[2][1] - field_bounds[1], 255, 0, 255, 255 ],
+                                        [ field_of_view[2][0] - field_bounds[0], field_of_view[2][1] - field_bounds[1], field_of_view[3][0] - field_bounds[0], field_of_view[3][1] - field_bounds[1], 255, 0, 255, 255 ],
+                                        [ field_of_view[3][0] - field_bounds[0], field_of_view[3][1] - field_bounds[1], field_of_view[0][0] - field_bounds[0], field_of_view[0][1] - field_bounds[1], 255, 0, 255, 255 ] ]
+  draw_cross_to_target :road, [ center[0] - field_bounds[0], center[1] - field_bounds[1] ], [0, 0, 255, 255]
+  #args.outputs.borders << rectangle + [ 255, 0, 0, 255 ]
+  args.render_target(:road).borders << rectangle + [ 255, 0, 0, 255 ]
+  #args.render_target(:road).borders << field_bounds + [ 255, 0, 0, 255 ]
 
   base_x  = args.state.player.x.div( TILE_SIZE )
   base_y  = args.state.player.y.div( TILE_SIZE )
@@ -194,16 +202,16 @@ def tick(args)
   scaned_field.each do |bounds|
     break if bounds[0].nil? || bounds[1].nil?
 
-    draw_cross( [ bounds[0][0] - field_bounds[0],
-                  bounds[0][1] - field_bounds[1] ],
-                [ 255, 0, 0, 255 ] )
-    draw_cross( [ bounds[1][0] - field_bounds[0],
-                  bounds[1][1] - field_bounds[1] ],
-                [ 0, 255, 0, 255 ] )
+    #draw_cross( [ bounds[0][0] - field_bounds[0],
+    #              bounds[0][1] - field_bounds[1] ],
+    #            [ 255, 0, 0, 255 ] )
+    #draw_cross( [ bounds[1][0] - field_bounds[0],
+    #              bounds[1][1] - field_bounds[1] ],
+    #            [ 0, 255, 0, 255 ] )
 
-    x     = bounds[0][0] - ( bounds[0][0] % TILE_SIZE )
+    x     = bounds[0][0] - ( bounds[0][0] % TILE_SIZE )# + center[0]
     max_x = bounds[1][0]
-    y     = bounds[0][1] - ( bounds[0][1] % TILE_SIZE )
+    y     = bounds[0][1] - ( bounds[0][1] % TILE_SIZE )# + center[1]
     until x >= max_x do
       tile_index_x  = base_x + x.div(TILE_SIZE)
       tile_index_y  = base_y + y.div(TILE_SIZE) 
@@ -211,39 +219,41 @@ def tick(args)
 
       break if tile_index.nil?
 
-      draw_cross( [ x - field_bounds[0],
-                    y - field_bounds[1] ],
-                  [ 255, 0, 255, 255 ] )
-      $gtk.args.outputs.labels << { x: x - field_bounds[0], y: y - field_bounds[1], text: "#{tile_index_x},#{tile_index_y}", size_enum: -5 }
-      $gtk.args.outputs.labels << { x: x - field_bounds[0], y: y - field_bounds[1], text: "#{tile_index}", size_enum: -5 }
+      #draw_cross( [ x - field_bounds[0],
+      #              y - field_bounds[1] ],
+      #            [ 255, 0, 255, 255 ] )
+      #$gtk.args.outputs.labels << { x: x - field_bounds[0], y: y - field_bounds[1], text: "#{tile_index_x},#{tile_index_y}", size_enum: -5 }
+      #$gtk.args.outputs.labels << { x: x - field_bounds[0], y: y - field_bounds[1], text: "#{tile_index}", size_enum: -5 }
 
-      tile_x        = x - ( args.state.player.x % TILE_SIZE )
-      tile_y        = y - ( args.state.player.y % TILE_SIZE )
+      tile_x        = x - ( ( args.state.player.x ) % TILE_SIZE ) + center[0]
+      tile_y        = y - ( ( args.state.player.y ) % TILE_SIZE ) + center[1]
       tiles << blit_tile( tile_index, tile_x - field_bounds[0], tile_y - field_bounds[1] )
 
       x += TILE_SIZE
     end
   end
 
-  #args.render_target(:road).sprites << tiles
-  args.outputs.sprites << tiles
+  puts [ center[0] - field_bounds[0], center[1] - field_bounds[1], rectangle[2], rectangle[3] ]
+  puts [ center[0].to_f / rectangle[2], center[1].to_f / rectangle[3] ]
+  args.render_target(:road).sprites << tiles
+  #args.outputs.sprites << tiles
 
 
   # - 3.2 Rotating :
-  #args.render_target(:rotated_road).sprites << {  x:              0,
-  #                                                y:              0,
-  #                                                w:              1280,
-  #                                                h:              720,
-  #                                                path:           :road,
-  #                                                angle:          -args.state.player.direction,
-  #                                                angle_anchor_x: 0.5,
-  #                                                angle_anchor_y: 0.5 }
+  args.render_target(:rotated_road).sprites << {  x:              640 - ( center[0] - field_bounds[0] ) / 1,
+                                                  y:              360 - ( center[1] - field_bounds[1] ) / 1,
+                                                  w:              rectangle[2],
+                                                  h:              rectangle[3],
+                                                  path:           :road,
+                                                  angle:          -args.state.player.direction,
+                                                  angle_anchor_x: 0,#( center[0] - field_bounds[0] ).abs.to_f / rectangle[2].to_f,
+                                                  angle_anchor_y: 0 }#( center[1] - field_bounds[1] ).abs.to_f / rectangle[3].to_f }
 
-  #args.outputs.sprites << { x:        0,
-  #                          y:        0,
-  #                          w:        1280,
-  #                          h:        720,
-  #                          path:     :rotated_road }
+  args.outputs.sprites << { x:        0,
+                            y:        0,
+                            w:        1280,
+                            h:        720,
+                            path:     :rotated_road }
 
 
   # - 3.2 Mode 7 rasterizing :
@@ -367,4 +377,9 @@ end
 def draw_cross(position,color)
   $gtk.args.outputs.lines << [ position[0] - 5, position[1] - 5, position[0] + 5, position[1] + 5 ] + color
   $gtk.args.outputs.lines << [ position[0] - 5, position[1] + 5, position[0] + 5, position[1] - 5 ] + color
+end
+
+def draw_cross_to_target(target,position,color)
+  $gtk.args.render_target(target).lines << [ position[0] - 5, position[1] - 5, position[0] + 5, position[1] + 5 ] + color
+  $gtk.args.render_target(target).lines << [ position[0] - 5, position[1] + 5, position[0] + 5, position[1] - 5 ] + color
 end
