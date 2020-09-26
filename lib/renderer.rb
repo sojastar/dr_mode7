@@ -1,6 +1,7 @@
 module Mode7
   class Renderer
-  attr_reader :focal, :near, :far, :center
+  attr_reader :focal, :near, :far, :center,
+              :near_fov_width, :far_fov_width
 
     # ---=== INITIALIZATIONS : ===---
     def initialize(focal,near,far,center)
@@ -37,6 +38,10 @@ module Mode7
 
     def center=(center)
       @center = center
+    end
+
+    def depth
+      @far - @near
     end
 
 
