@@ -172,20 +172,21 @@ def tick(args)
 
   # - 3.2 Rotating :
   args.outputs.sprites << { x:              args.state.renderer.far_fov_width - center[0] + field_bounds[0],
-                            y:              args.state.renderer.depth         - center[1] + field_bounds[1],
-                            w:              field_bounds[2],
-                            h:              field_bounds[3],
-                            path:           :road,
-                            angle:          -args.state.player.direction,
-                            angle_anchor_x: ( center[0] - field_bounds[0] ) / field_bounds[2],
-                            angle_anchor_y: ( center[1] - field_bounds[1] ) / field_bounds[3] }
+  #args.render_target(:scanned_road).sprites <<  { x:              args.state.renderer.far_fov_width - center[0] + field_bounds[0],
+                                                  y:              args.state.renderer.depth         - center[1] + field_bounds[1],
+                                                  w:              field_bounds[2],
+                                                  h:              field_bounds[3],
+                                                  path:           :road,
+                                                  angle:          -args.state.player.direction,
+                                                  angle_anchor_x: ( center[0] - field_bounds[0] ) / field_bounds[2],
+                                                  angle_anchor_y: ( center[1] - field_bounds[1] ) / field_bounds[3] }
 
 
   # - 3.2 Mode 7 rasterizing :
   #distance  = 0
   #args.render_target(:scanned_road).sprites <<  args.state.raster_height.times.map do |y|
   #                                                jump      = 10.0 * y / ( args.state.raster_height - 1 ) + 1
-  #                                                distance += jump
+  #                                                distance += 1#jump
   #                                                scale     =  1 - ( 0.9 / 80.0 ) * y
   #                                                {  x:         80 - 640 * scale,
   #                                                   y:         y,
@@ -196,7 +197,7 @@ def tick(args)
   #                                                   source_y:  368 + distance,
   #                                                   source_w:  1280,
   #                                                   source_h:  1 }
-  #end
+  #                                              end
 
   #args.outputs.sprites << { x:      0,
   #                          y:      0,
