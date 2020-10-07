@@ -25,9 +25,9 @@ RASTER_SCAN_MAX       = 1
 RASTER_SCAN_MIN       = 1.0/24.0
 
 FOCAL                 = 45.0
-NEAR                  = 256#64
+NEAR                  = 32#256
+CENTER                = 192#32
 FAR                   = 512
-CENTER                = 32 
 
 TRANSLATION_SPEED     = 5
 ROTATION_SPEED        = 2.0
@@ -159,9 +159,9 @@ def tick(args)
 
       break if tile_index.nil?
 
-      tile_x        = x - ( ( args.state.player.x ) % TILE_SIZE ) + center[0]
-      tile_y        = y - ( ( args.state.player.y ) % TILE_SIZE ) + center[1]
-      tiles << blit_tile( tile_index, tile_x - field_bounds[0], tile_y - field_bounds[1] )
+      tile_x        = x - ( ( args.state.player.x ) % TILE_SIZE ) + center[0] - field_bounds[0]
+      tile_y        = y - ( ( args.state.player.y ) % TILE_SIZE ) + center[1] - field_bounds[1]
+      tiles << blit_tile( tile_index, tile_x, tile_y )
 
       x += TILE_SIZE
     end
@@ -171,9 +171,10 @@ def tick(args)
 
 
   # - 3.2 Rotating :
+  puts center
   args.outputs.sprites << { x:              args.state.renderer.far_fov_width - center[0] + field_bounds[0],
   #args.render_target(:scanned_road).sprites <<  { x:              args.state.renderer.far_fov_width - center[0] + field_bounds[0],
-                                                  y:              args.state.renderer.depth         - center[1] + field_bounds[1],
+                            y:              args.state.renderer.center - args.state.renderer.near         - center[1] + field_bounds[1],
                                                   w:              field_bounds[2],
                                                   h:              field_bounds[3],
                                                   path:           :road,

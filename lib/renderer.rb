@@ -44,32 +44,31 @@ module Mode7
       @far - @near
     end
 
-
     # ---=== FIELD OF VIEW : ===---
     def compute_field_of_view(ux,uy,vx,vy)
 
       # --- Near plan :
-      near_left_x   = ux * ( @center - @near ) - vx * @near_fov_width
-      near_left_y   = uy * ( @center - @near ) - vy * @near_fov_width
-      near_right_x  = ux * ( @center - @near ) + vx * @near_fov_width
-      near_right_y  = uy * ( @center - @near ) + vy * @near_fov_width
+      near_left_x   = ux * ( @near - @center ) - vx * @near_fov_width
+      near_left_y   = uy * ( @near - @center ) - vy * @near_fov_width
+      near_right_x  = ux * ( @near - @center ) + vx * @near_fov_width
+      near_right_y  = uy * ( @near - @center ) + vy * @near_fov_width
 
       # --- Far plan :
-      far_left_x    = ux * ( @far - @center )  - vx * @far_fov_width
-      far_left_y    = uy * ( @far - @center )  - vy * @far_fov_width
-      far_right_x   = ux * ( @far - @center )  + vx * @far_fov_width
-      far_right_y   = uy * ( @far - @center )  + vy * @far_fov_width
+      far_left_x    = ux * ( @far - @center ) - vx * @far_fov_width
+      far_left_y    = uy * ( @far - @center ) - vy * @far_fov_width
+      far_right_x   = ux * ( @far - @center ) + vx * @far_fov_width
+      far_right_y   = uy * ( @far - @center ) + vy * @far_fov_width
 
       # --- Rotation center :
-      center_x      = ux * @center
-      center_y      = uy * @center
+      center_x      = 0#ux * ( @center )
+      center_y      = 0#uy * ( @center )
 
       [ [ [ near_left_x,  near_left_y   ],
           [ near_right_x, near_right_y  ],
           [ far_right_x,  far_right_y   ],
           [ far_left_x,   far_left_y    ] ],
 
-        [ center_x,     center_y      ] ]
+        [ center_x,       center_y      ] ]
     end
   end
 
